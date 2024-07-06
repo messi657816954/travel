@@ -37,6 +37,19 @@ class User(AbstractBaseUser,PermissionsMixin):
     start_date = models.DateTimeField(default=timezone.now)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
+    is_phone_verify = models.BooleanField(default=False)
+
+    REGISTRATION_CHOICES = [
+        ('email', 'Email'),
+        ('google', 'Google'),
+    ]
+    registration_method = models.CharField(
+        max_length=10,
+        choices=REGISTRATION_CHOICES,
+        default='email'
+    )
+    phone_number_activate = models.BooleanField(default=False)
+    reset_password_code = models.CharField(max_length=30,default="")
 
     objects = UserManager()
     USERNAME_FIELD = 'email'

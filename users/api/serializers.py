@@ -11,20 +11,20 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
 class RegistrationSerializer(serializers.ModelSerializer):
-    password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
+    # password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
     class Meta:
         model = User
-        fields =  ['email','user_name', 'password', 'password2']
+        fields =  ['email','user_name', 'password', 'otp']
         extra_kwargs = {
             'password': {'write_only': True}
         }
     def save(self):
-        password = self.validated_data['password']
-        password2 = self.validated_data['password2']
+        # password = self.validated_data['password']
+        # password2 = self.validated_data['password2']
 
-        if password != password2:
-            raise serializers.ValidationError(
-                {'error': 'passwords did not match'})
+        # if password != password2:
+        #     raise serializers.ValidationError(
+        #         {'error': 'passwords did not match'})
 
         user = User(email=self.validated_data['email'],
                     user_name=self.validated_data['user_name'],is_active=True)
@@ -36,6 +36,18 @@ class VerifyOTPSerializer(serializers.Serializer):
 
     email = serializers.EmailField()
     otp = serializers.CharField()
+
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+
+
+class UserDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'user_name', 'otp']
 
 # class CustomTokenRefreshViewSerializer(TokenRefreshView):
 #     def validate(self, attrs):
@@ -50,5 +62,4 @@ class VerifyOTPSerializer(serializers.Serializer):
 # class LoginTokenGenerationSerializer(serializers.Serializer):
 #     email = serializers.EmailField()
 #     password = serializers.CharField()
-    
     
