@@ -25,30 +25,7 @@ class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
     throttle_scope = 'login'
 
-# class LoginTokenGenerationAPIView(APIView):
-#
-#     def post(self, request, *args, **kwargs):
-#         serializer = LoginTokenGenerationSerializer(data=request.data)
-#         data = {}
-#
-#         if serializer.is_valid(raise_exception=True):
-#
-#             email = serializer.data['email']
-#             password = serializer.data['password']
-#             user_obj = User.objects.get(email=email)
-#
-#
-#             try:
-#                 if user_obj is not None:
-#                     access_token = AccessToken.for_user(user=user_obj)
-#                     refresh_token = RefreshToken.for_user(user=user_obj)
-#                     data['refresh'] = str(access_token)
-#                     data['access'] = str(refresh_token)
-#
-#             except Exception as e:
-#                 return Response({'message':'user_name or password is incorrect'})
-#
-#         return Response(data, status.HTTP_200_OK)
+
 
 
 class RegistrationAPIView(generics.GenericAPIView):
@@ -66,7 +43,10 @@ class RegistrationAPIView(generics.GenericAPIView):
             data['refresh'] = str(refresh)
             data['access'] = str(refresh.access_token)
 
-        return Response(data, status.HTTP_201_CREATED)
+        res = reponses(success=1, results=data, error_msg='')
+        return Response(res)
+
+
 
 class VerifyOTPAPIView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
@@ -79,8 +59,12 @@ class VerifyOTPAPIView(generics.GenericAPIView):
             if user_obj.otp == otp:
                 user_obj.is_staff = True
                 user_obj.save()
-                return Response("verified")
-            return Response(serializer.data,status.HTTP_400_BAD_REQUEST)
+                res = reponses(success=0, error_msg='verified')
+                return Response(res)
+            res = reponses(success=1, results=serializer.data, error_msg='')
+            return Response(res)
+
+
 
 
 class LogoutBlacklistTokenUpdateView(APIView):
@@ -92,10 +76,11 @@ class LogoutBlacklistTokenUpdateView(APIView):
             refresh_token = request.data["refresh"]
             token = RefreshToken(refresh_token)
             token.blacklist()
-            return Response(status=status.HTTP_205_RESET_CONTENT)
+            res = reponses(success=1, results="Ok", error_msg='')
+            return Response(res)
         except Exception as e:
-            
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            res = reponses(success=0,  error_msg='Exception')
+            return Response(res)
 
 
 
