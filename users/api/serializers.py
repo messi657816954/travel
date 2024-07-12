@@ -3,8 +3,11 @@ from rest_framework import serializers
 # from rest_framework_simplejwt.serializers import TokenRefreshView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from users.models import User as user
+from django.contrib.auth import authenticate
+
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)

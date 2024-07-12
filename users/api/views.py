@@ -21,9 +21,34 @@ from django.conf import settings
 from django.template.loader import render_to_string
 
 
+
+
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
     throttle_scope = 'login'
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+
+        try:
+            serializer.is_valid(raise_exception=True)
+        except Exception as e:
+            res = reponses(success=0, error_msg=str(e))
+            return Response(res)
+
+        # Récupérez la réponse standard
+        response_data = serializer.validated_data
+
+        # Personnalisez la réponse selon vos besoins
+        custom_response_data = {
+            'access_token': response_data.get('access'),
+            'refresh_token': response_data.get('refresh'),
+
+        }
+        res = reponses(success=1, results=custom_response_data, error_msg='')
+        return Response(res)
+
+
 
 
 
