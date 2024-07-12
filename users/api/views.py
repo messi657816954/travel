@@ -19,6 +19,9 @@ from users.utils import *
 from django.conf import settings
 
 from django.template.loader import render_to_string
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.exceptions import AuthenticationFailed
 
 
 
@@ -296,18 +299,31 @@ class UserDetailClientView(APIView):
     serializer_class = UserDetailSerializer
 
     def get(self, request, *args, **kwargs):
-
         try:
             user_obj = request.user
             data_serializer = self.serializer_class(user_obj)
-            res = reponses(success=1, results=data_serializer.data)
+            res = self.reponses(success=1, results=data_serializer.data)
             return Response(res)
         except User.DoesNotExist:
-            res = reponses(success=0, error_code='', error_msg="Cet utilisateur n'est pas un UTILISATEUR")
+            res = self.reponses(success=0, error_msg="Cet utilisateur n'est pas un UTILISATEUR")
             return Response(res)
 
-
     def get_object(self):
-        user_obj = get_object_or_404(User,pk=self.kwargs['pk'])
+        user_obj = get_object_or_404(User, pk=self.kwargs['pk'])
         self.check_object_permissions(self.request, user_obj)
         return user_obj
+
+    def reponses(self, success, num_page=None, results=None, error_msg=None):
+        RESPONSE_MSG = [{'success': success}]
+
+        if num_page:
+            RESPONSE_MSG[0].update({'nombre_page': num_page})
+        if results:
+            if isinstance(results, list):
+                RESPONSE_MSG[0].update({'results': results})
+            else:
+                RESPONSE_MSG[0].update({'results': [results]})
+        if error_msg:
+            RESPONSE_MSG[0].update({'errors': [{'error_msg': error_msg}]})
+
+        return RESPONSE_MSG
