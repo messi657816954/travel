@@ -132,7 +132,7 @@ class PerformRegistrationAPIView(APIView):
         data_query = {
             'email': request.data['email'],
             'user_name': request.data['user_name'],
-            'otp': request.data['otp'],
+            # 'otp': request.data['otp'],
             'password': request.data['code']
         }
         serializer = RegistrationSerializer(data=data_query)
