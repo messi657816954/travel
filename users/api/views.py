@@ -1,5 +1,5 @@
 from .serializers import RegistrationSerializer, VerifyOTPSerializer, MyTokenObtainPairSerializer, \
-    ChangePasswordSerializer, UserDetailSerializer
+    ChangePasswordSerializer, UserDetailSerializer, CompteSerializer, MoyenPaiementSerializer
 from rest_framework import generics,status
 from rest_framework.views import APIView
 from rest_framework.permissions import *
@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from users.emails import *
-from users.models import User
+from users.models import User, Compte, MoyenPaiement
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.throttling import ScopedRateThrottle
 from django.shortcuts import get_object_or_404
@@ -165,7 +165,20 @@ class PerformRegistrationAPIView(APIView):
         }
         serializer = RegistrationSerializer(data=data_query)
         if serializer.is_valid(raise_exception=True):
-            serializer.save()
+            user = serializer.save()
+            cpte = Compte.objects.create(
+                virtual_balance=0,
+                real_balance=0,
+                incoming_amount=0,
+                user=user  # Utilisation de l'instance utilisateur
+            )
+            compte_serializer = CompteSerializer(cpte)
+
+            # Préparation des données de réponse
+            response_data = {
+                **serializer.data,  # Données de l'utilisateur
+                'compte': compte_serializer.data  # Données du compte
+            }
             res = reponses(success=1, results=data_query, error_msg='')
             return Response(res)
         res = reponses(success=0, error_msg=serializer.errors)
@@ -302,6 +315,15 @@ class UserDetailClientView(APIView):
         try:
             user_obj = request.user
             data_serializer = self.serializer_class(user_obj)
+            cpte = Compte.objects.get(user=request.user)
+            compte_serializer = CompteSerializer(cpte)
+            moyens = MoyenPaiement.objects.filter(user=request.user)
+            type_paiement_serializer = MoyenPaiementSerializer(moyens, many=True)
+            response_data = {
+                **data_serializer.data,  # Données de l'utilisateur
+                'compte': compte_serializer.data,  # Données du compte
+                'type_paiement': type_paiement_serializer.data  # Données du compte
+            }
             res = self.reponses(success=1, results=data_serializer.data)
             return Response(res)
         except User.DoesNotExist:
@@ -312,6 +334,101 @@ class UserDetailClientView(APIView):
         user_obj = get_object_or_404(User, pk=self.kwargs['pk'])
         self.check_object_permissions(self.request, user_obj)
         return user_obj
+
+
+
+
+class MoyenPaiementListCreateAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        moyens = MoyenPaiement.objects.filter(user=request.user)
+        serializer = MoyenPaiementSerializer(moyens, many=True)
+        res = reponses(success=1, results=serializer.data, error_msg='')
+        return Response(res, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        data = request.data
+        data['user'] = request.user.id  # Associer l'utilisateur authentifié
+        serializer = MoyenPaiementSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            res = reponses(success=1, results=serializer.data, error_msg='')
+            return Response(res, status=status.HTTP_201_CREATED)
+        res = reponses(success=0, error_msg=serializer.errors)
+        return Response(res, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+class MoyenPaiementDetailAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, pk):
+        try:
+            return MoyenPaiement.objects.get(pk=pk, user=self.request.user)
+        except MoyenPaiement.DoesNotExist:
+            return None
+
+    def get(self, request, pk, *args, **kwargs):
+        moyen = self.get_object(pk)
+        if not moyen:
+            res = reponses(success=0, error_msg="Moyen de paiement introuvable.")
+            return Response(res, status=status.HTTP_404_NOT_FOUND)
+        serializer = MoyenPaiementSerializer(moyen)
+        res = reponses(success=1, results=serializer.data, error_msg='')
+        return Response(res, status=status.HTTP_200_OK)
+
+    def put(self, request, pk, *args, **kwargs):
+        moyen = self.get_object(pk)
+        if not moyen:
+            res = reponses(success=0, error_msg="Moyen de paiement introuvable.")
+            return Response(res, status=status.HTTP_404_NOT_FOUND)
+        serializer = MoyenPaiementSerializer(moyen, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            res = reponses(success=1, results=serializer.data, error_msg='')
+            return Response(res, status=status.HTTP_200_OK)
+        res = reponses(success=0, error_msg=serializer.errors)
+        return Response(res, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk, *args, **kwargs):
+        moyen = self.get_object(pk)
+        if not moyen:
+            res = reponses(success=0, error_msg="Moyen de paiement introuvable.")
+            return Response(res, status=status.HTTP_404_NOT_FOUND)
+        moyen.delete()
+        res = reponses(success=1, results="Moyen de paiement supprimé avec succès.", error_msg='')
+        return Response(res, status=status.HTTP_204_NO_CONTENT)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     def reponses(self, success, num_page=None, results=None, error_msg=None):
         RESPONSE_MSG = [{'success': success}]

@@ -57,3 +57,25 @@ class User(AbstractBaseUser,PermissionsMixin):
     
     def __str__(self):
         return self.user_name
+
+
+class MoyenPaiement(models.Model):
+    type = models.CharField(max_length=50)
+    telephone = models.CharField(max_length=20)
+    numero_carte = models.CharField(max_length=16)
+    email = models.EmailField()
+    cvv = models.CharField(max_length=4)
+    date_expiration = models.DateField()
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+
+class Compte(models.Model):
+    virtual_balance = models.DecimalField(max_digits=10, decimal_places=2)
+    real_balance = models.DecimalField(max_digits=10, decimal_places=2)
+    incoming_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+
+
+
+class Notification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)

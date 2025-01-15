@@ -22,5 +22,8 @@ urlpatterns = [
     path('forgot/password/perform', PerformForgotPasswordAPIView.as_view(), name='Perform-Forgot-Password'),
     path('password/change', ChangePasswordView.as_view(), name='User-Reset-Password'),
 
+    path('moyens-paiement/', MoyenPaiementListCreateAPIView.as_view(), name='moyen-paiement-list-create'),
+    path('moyens-paiement/<int:pk>/', MoyenPaiementDetailAPIView.as_view(), name='moyen-paiement-detail'),
+
 
 ]

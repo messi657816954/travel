@@ -1,4 +1,4 @@
-from users.models import User
+from users.models import User, Compte, MoyenPaiement
 from rest_framework import serializers
 # from rest_framework_simplejwt.serializers import TokenRefreshView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -42,6 +42,14 @@ class VerifyOTPSerializer(serializers.Serializer):
 
 
 
+
+class CompteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Compte
+        fields = '__all__'
+
+
+
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True)
@@ -51,6 +59,14 @@ class UserDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'email', 'user_name', 'otp']
+
+
+
+class MoyenPaiementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MoyenPaiement
+        fields = '__all__'
+
 
 # class CustomTokenRefreshViewSerializer(TokenRefreshView):
 #     def validate(self, attrs):
