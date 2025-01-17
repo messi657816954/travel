@@ -2,10 +2,6 @@ from datetime import timezone
 
 
 
-from .models import Annonce, Reservation
-from .serializers import AnnonceSerializer, ReservationSerializer
-
-
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -15,9 +11,13 @@ from django.template.loader import render_to_string
 from django.conf import settings
 from decimal import Decimal
 
-from .models import Annonce, Voyage
+from reservations.api.serializers import ReservationSerializer
+from reservations.models import Reservation
+from users.utils import reponses, generate_reference
 from .serializers import AnnonceSerializer, VoyageSerializer
-from common.utils import reponses, generate_reference
+#from commons.utils import reponses, generate_reference
+
+from ..models import Annonce
 
 
 class CreateAnnonceAPIView(APIView):
@@ -53,7 +53,7 @@ class CreateAnnonceAPIView(APIView):
 
             annonce_data = {
                 'date_publication': timezone.now(),
-                'est_publie': True,
+                'est_publie': False,
                 'type_bagage_auto': request.data['type_bagage_auto'],
                 'nombre_kg_dispo': nombre_kg,
                 'montant_par_kg': montant_par_kg,
@@ -116,9 +116,9 @@ class CreateAnnonceAPIView(APIView):
 class ReserverKilogrammesAPIView(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def post(self, request, annonce_id):
+    def post(self, request):
         try:
-            annonce = Annonce.objects.get(id=annonce_id)
+            annonce = Annonce.objects.get(id=request.data['annonce_id'])
 
             if annonce.nombre_kg_dispo < int(request.data['nombre_kg']):
                 return Response(reponses(success=0, error_msg='Kilogrammes demandés non disponibles'))
@@ -132,21 +132,16 @@ class ReserverKilogrammesAPIView(APIView):
                 'statut': 'EN_ATTENTE',
                 'reference': generate_reference(),
                 'user': request.user.id,
-                'annonce': annonce_id
+                'annonce': request.data['annonce_id']
             }
 
             serializer = ReservationSerializer(data=reservation_data)
             if not serializer.is_valid():
                 return Response(reponses(success=0, error_msg=serializer.errors))
-
             reservation = serializer.save()
-
             # Mettre à jour les kg disponibles
             annonce.nombre_kg_dispo -= int(request.data['nombre_kg'])
             annonce.save()
-
-            # Notifier l'annonceur
-            self._notifier_annonceur(annonce, reservation)
 
             return Response(reponses(success=1, results=serializer.data))
 
@@ -173,36 +168,48 @@ class ReserverKilogrammesAPIView(APIView):
         mail.send(fail_silently=True)
 
 
+import asyncio
+from asgiref.sync import sync_to_async
+
+async def send_email_async(subject, message, recipient_email):
+    mail = EmailMessage(
+        subject,
+        message,
+        settings.EMAIL_HOST_USER,
+        [recipient_email],
+    )
+    mail.content_subtype = "html"
+    await sync_to_async(mail.send)(fail_silently=True)
+
+
 class ConfirmerReceptionColisAPIView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def post(self, request, reservation_id):
         try:
-            reservation = Reservation.objects.select_related('annonce').get(id=reservation_id)
+            reservation = Reservation.objects.get(id=reservation_id)
 
             # Vérifier que c'est bien l'annonceur qui confirme
             if request.user != reservation.annonce.createur:
-                return Response(reponses(success=0, error_msg='Non autorisé'))
-
-            # Mettre à jour le statut de la réservation
-            reservation.statut = 'REMIS'
-            reservation.save()
+                return Response(reponses(success=0, error_msg="Non autorisé: c'est l'annonceur qui doit confirmer"))
 
             # Générer et envoyer le code de confirmation au destinataire
-            code_confirmation = generate_reference()
+            code_livraison = generate_reference()
+
+            # Mettre à jour le statut de la réservation
+            reservation.statut = 'CONFIRM'
+            reservation.code_livraison = code_livraison
+            reservation.save()
+
+            # apres le paiement il faut mettre à jour le compte du client et faire la transaction
+
+            # Préparer le contexte de l'email
             ctx = {
-                'code_confirmation': code_confirmation,
-                'reservation_ref': reservation.reference
+                'code_confirmation': code_livraison
             }
-            message = render_to_string('code_confirmation_colis.html', ctx)
-            mail = EmailMessage(
-                "Code de confirmation de réception",
-                message,
-                settings.EMAIL_HOST_USER,
-                [reservation.telephone_personne_a_contacter]  # Assurez-vous que c'est un email valide
-            )
-            mail.content_subtype = "html"
-            mail.send(fail_silently=True)
+            message = render_to_string('confirm_reception_colis.html', ctx)
+            # Envoyer l'email de manière asynchrone
+            asyncio.create_task(send_email_async("Code de confirmation de réception", message, reservation.user.email))
 
             return Response(reponses(success=1, results={'message': 'Code de confirmation envoyé'}))
 
@@ -210,6 +217,19 @@ class ConfirmerReceptionColisAPIView(APIView):
             return Response(reponses(success=0, error_msg='Réservation non trouvée'))
         except Exception as e:
             return Response(reponses(success=0, error_msg=str(e)))
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class ConfirmerLivraisonAPIView(APIView):
     permission_classes = (IsAuthenticated,)
@@ -224,11 +244,19 @@ class ConfirmerLivraisonAPIView(APIView):
                 return Response(reponses(success=0, error_msg='Code de confirmation invalide'))
 
             # Finaliser la livraison
-            reservation.statut = 'LIVRE'
+            reservation.statut = 'DELIVRATE'
             reservation.save()
+            annonce = Annonce.objects.get(id=reservation.annonce.pk)
+            annonce.est_actif = False
+            annonce.save()
+            # TODO: apres le paiement il faut mettre à jour le compte de l'annonceur et faire la transaction
 
             # Notifier toutes les parties
-            self._notifier_parties(reservation)
+            ctx = {
+                'reservation_ref': reservation.reference
+            }
+            message = render_to_string('confirm_livraison_colis.html', ctx)
+            asyncio.create_task(send_email_async("Livraison du colis", message, reservation.user.email))
 
             return Response(reponses(success=1, results={'message': 'Livraison confirmée avec succès'}))
 
@@ -237,31 +265,4 @@ class ConfirmerLivraisonAPIView(APIView):
         except Exception as e:
             return Response(reponses(success=0, error_msg=str(e)))
 
-    def _notifier_parties(self, reservation):
-        # Notifier l'expéditeur
-        ctx_expediteur = {
-            'reservation_ref': reservation.reference
-        }
-        message_expediteur = render_to_string('confirmation_livraison_expediteur.html', ctx_expediteur)
-        mail_expediteur = EmailMessage(
-            "Votre colis a été livré",
-            message_expediteur,
-            settings.EMAIL_HOST_USER,
-            [reservation.user.email]
-        )
-        mail_expediteur.content_subtype = "html"
-        mail_expediteur.send(fail_silently=True)
 
-        # Notifier l'annonceur
-        ctx_annonceur = {
-            'reservation_ref': reservation.reference
-        }
-        message_annonceur = render_to_string('confirmation_livraison_annonceur.html', ctx_annonceur)
-        mail_annonceur = EmailMessage(
-            "Livraison confirmée",
-            message_annonceur,
-            settings.EMAIL_HOST_USER,
-            [reservation.annonce.createur.email]
-        )
-        mail_annonceur.content_subtype = "html"
-        mail_annonceur.send(fail_silently=True)

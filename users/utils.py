@@ -189,7 +189,24 @@ def logger(request, message):
 
 
 
+import uuid
+import datetime
 
+def generate_reference():
+    """
+    Génère une chaîne unique pour représenter une référence.
+    Format : YYYYMMDDHHMMSS-UUID
+    """
+    # Obtenir l'horodatage actuel
+    timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+
+    # Générer un UUID unique
+    unique_id = uuid.uuid4().hex[:8]  # Utiliser les 8 premiers caractères de l'UUID
+
+    # Combiner l'horodatage et l'UUID
+    reference = f"{timestamp}-{unique_id}"
+
+    return reference
 
 
 

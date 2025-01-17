@@ -22,12 +22,6 @@ class RegistrationSerializer(serializers.ModelSerializer):
             'password': {'write_only': True}
         }
     def save(self):
-        # password = self.validated_data['password']
-        # password2 = self.validated_data['password2']
-
-        # if password != password2:
-        #     raise serializers.ValidationError(
-        #         {'error': 'passwords did not match'})
 
         user = User(email=self.validated_data['email'],
                     user_name=self.validated_data['user_name'],is_active=True)

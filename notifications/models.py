@@ -1,6 +1,7 @@
 from django.db import models
 
 from commons.models import TimeStampedModel
+from users.models import User
 
 
 class Notification(TimeStampedModel):

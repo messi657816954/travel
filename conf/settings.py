@@ -40,6 +40,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'users',
+    'annonces',
+    'commons',
+    'reservations',
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
 ]
@@ -82,6 +85,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        'OPTIONS': {
+            'timeout': 20,  # Temps d'attente en secondes avant de lever une erreur
+        },
     }
 }
 

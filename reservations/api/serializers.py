@@ -1,15 +1,10 @@
 from rest_framework import serializers
 
-from annonces.models import Voyage, Annonce
+from reservations.models import Reservation
 
 
-class VoyageSerializer(serializers.ModelSerializer):
+class ReservationSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Voyage
+        model = Reservation
         fields = '__all__'
-
-class AnnonceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Annonce
-        fields = '__all__'
-        read_only_fields = ('date_publication', 'est_publie', 'est_actif')
+        # read_only_fields = ('date_publication', 'est_publie', 'est_actif')

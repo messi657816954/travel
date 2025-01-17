@@ -9,15 +9,18 @@ from users.models import User
 
 REGISTRATION_CHOICES = [
         ('PENDING', 'PENDING'),
-        ('google', 'Google'),
+        ('CONFIRM', 'CONFIRM'),
+        ('CANCEL', 'CANCEL'),
+        ('DELIVRATE', 'DELIVRATE'),
     ]
+
 
 class Reservation(TimeStampedModel):
     nombre_kg = models.IntegerField()
     montant = models.DecimalField(max_digits=100, decimal_places=2)
     nom_personne_a_contacter = models.CharField(max_length=100)
     telephone_personne_a_contacter = models.CharField(max_length=20)
-    code_livraison = models.CharField(max_length=50)
+    code_livraison = models.CharField(max_length=50, unique=True)
     reference = models.CharField(max_length=50, unique=True)
     date_paiement = models.DateTimeField(null=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reservations')

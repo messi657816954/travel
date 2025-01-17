@@ -6,19 +6,19 @@ from django.template.loader import render_to_string
 from django.conf import settings
 from decimal import Decimal
 
-from .models import Annonce, Reservation
-from .serializers import AnnonceSerializer, ReservationSerializer
-from common.utils import reponses, generate_reference
+from annonces.models import Annonce
+from users.utils import reponses, generate_reference
+from .serializers import ReservationSerializer
+
+from ..models import Reservation
 
 
-
-
-class ReserverKilogrammesAPIView(APIView):
+class CreateReserverKilogrammesAPIView(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def post(self, request, annonce_id):
+    def post(self, request):
         try:
-            annonce = Annonce.objects.get(id=annonce_id)
+            annonce = Annonce.objects.get(id=request.data['annonce_id'])
 
             if annonce.nombre_kg_dispo < int(request.data['nombre_kg']):
                 return Response(reponses(success=0, error_msg='Kilogrammes demandés non disponibles'))
@@ -29,10 +29,10 @@ class ReserverKilogrammesAPIView(APIView):
                 'montant': Decimal(request.data['nombre_kg']) * annonce.montant_par_kg,
                 'nom_personne_a_contacter': request.data['nom_destinataire'],
                 'telephone_personne_a_contacter': request.data['telephone_destinataire'],
-                'statut': 'EN_ATTENTE',
+                'statut': 'PENDING',
                 'reference': generate_reference(),
                 'user': request.user.id,
-                'annonce': annonce_id
+                'annonce': request.data['annonce_id']
             }
 
             serializer = ReservationSerializer(data=reservation_data)
@@ -54,6 +54,65 @@ class ReserverKilogrammesAPIView(APIView):
             return Response(reponses(success=0, error_msg='Annonce non trouvée'))
         except Exception as e:
             return Response(reponses(success=0, error_msg=str(e)))
+
+
+
+class UpdateReserverKilogrammesAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        try:
+            reservation = Reservation.objects.get(id=request.data['reservation_id'])
+            annonce = Annonce.objects.get(id=request.data['annonce_id'])
+
+            if annonce.nombre_kg_dispo < int(request.data['nombre_kg']):
+                return Response(reponses(success=0, error_msg='Kilogrammes demandés non disponibles'))
+
+            # Modifier la réservation
+            reservation.nombre_kg = request.data['nombre_kg']
+            reservation.montant = Decimal(request.data['nombre_kg']) * annonce.montant_par_kg
+            reservation.nom_personne_a_contacter = request.data['nom_personne_a_contacter']
+            reservation.nombre_kg = request.data['nombre_kg']
+            reservation.nombre_kg = request.data['nombre_kg']
+
+            serializer = ReservationSerializer(reservation)
+            reservation.save()
+            # Mettre à jour les kg disponibles
+            annonce.nombre_kg_dispo -= int(request.data['nombre_kg'])
+            annonce.save()
+
+
+            return Response(reponses(success=1, results=serializer.data))
+
+        except Annonce.DoesNotExist:
+            return Response(reponses(success=0, error_msg='Annonce non trouvée'))
+        except Exception as e:
+            return Response(reponses(success=0, error_msg=str(e)))
+
+
+
+
+
+
+class CancelReservationAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, reservation_id):
+        try:
+            reservation = Reservation.objects.get(id=reservation_id)
+            annonce = Annonce.objects.get(id=reservation.annonce.pk)
+            # Mettre à jour le statut de la réservation
+            reservation.statut = 'CANCEL'
+            reservation.save()
+            annonce.nombre_kg_dispo += int(reservation.nombre_kg)
+            annonce.save()
+            return Response(reponses(success=1, results={'message': 'Reservation annulée avec succès'}))
+        except Reservation.DoesNotExist:
+            return Response(reponses(success=0, error_msg='Réservation non trouvée'))
+        except Exception as e:
+            return Response(reponses(success=0, error_msg=str(e)))
+
+
 
     def _notifier_annonceur(self, annonce, reservation):
         ctx = {

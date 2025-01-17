@@ -23,7 +23,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
 
-
+from django.db import transaction
 
 
 class MyTokenObtainPairView(TokenObtainPairView):
@@ -66,10 +66,19 @@ class RegistrationAPIView(generics.GenericAPIView):
         if serializer.is_valid(raise_exception=True):
             user = serializer.save()
             # send_otp(serializer.data['email'])
+            # cpte = Compte.objects.create(
+            #     virtual_balance=0,
+            #     real_balance=0,
+            #     incoming_amount=0,
+            #     user=user  # Utilisation de l'instance utilisateur
+            # )
+            # compte_serializer = CompteSerializer(cpte)
             data['response'] = "Registration Successful!"
             refresh = RefreshToken.for_user(user=user)
             data['refresh'] = str(refresh)
             data['access'] = str(refresh.access_token)
+            # data['compte'] = compte_serializer.data
+            # data['user'] = self.get_serializer(user)
 
         res = reponses(success=1, results=data, error_msg='')
         return Response(res)
@@ -137,7 +146,7 @@ class InitRegistrationAPIView(APIView):
                 'code': code,
                 'client': request.data['email']
             }
-            message = render_to_string('mail.html', ctx)
+            message = render_to_string('confirm_reception_colis.html', ctx)
             mail = EmailMessage(
                 "Mot de passe privé",
                 message,
@@ -156,15 +165,18 @@ class PerformRegistrationAPIView(APIView):
     permission_classes = (AllowAny,)
     serializer_class = RegistrationSerializer
 
+    @transaction.atomic
     def post(self, request, *args, **kwargs):
+        print("--------1----data : ",request.data)
         data_query = {
             'email': request.data['email'],
             'user_name': request.data['user_name'],
             # 'otp': request.data['otp'],
-            'password': request.data['code']
+            'password': request.data['password']
         }
         serializer = RegistrationSerializer(data=data_query)
         if serializer.is_valid(raise_exception=True):
+            print("-------2-----data : ",request.data)
             user = serializer.save()
             cpte = Compte.objects.create(
                 virtual_balance=0,
@@ -175,9 +187,12 @@ class PerformRegistrationAPIView(APIView):
             compte_serializer = CompteSerializer(cpte)
 
             # Préparation des données de réponse
+            refresh = RefreshToken.for_user(user=user)
             response_data = {
                 **serializer.data,  # Données de l'utilisateur
-                'compte': compte_serializer.data  # Données du compte
+                'access': str(refresh.access_token),  # Données du compte
+                'refresh': str(refresh),  # Données du compte
+                # 'compte': compte_serializer.data  # Données du compte
             }
             res = reponses(success=1, results=data_query, error_msg='')
             return Response(res)
@@ -444,3 +459,10 @@ class MoyenPaiementDetailAPIView(APIView):
             RESPONSE_MSG[0].update({'errors': [{'error_msg': error_msg}]})
 
         return RESPONSE_MSG
+
+
+
+
+
+
+
