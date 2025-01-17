@@ -22,6 +22,7 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H 54.36.163.57 >> ~/.ssh/known_hosts
 
+
       - name: Deploy application
         run: |
           ssh -o StrictHostKeyChecking=no guy001@54.36.163.57 << 'EOF'
