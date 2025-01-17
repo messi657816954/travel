@@ -1,38 +1,47 @@
-name: Deploy to Production
+name: Deploy to VPS
 
 on:
   push:
     branches:
-      - master  # ou main selon votre branche principale
+      - main  # ou la branche de votre choix
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Étape 1: Vérifier le code
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      # Étape 2: Configurer SSH
-      - name: Set up SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H 54.36.163.57 >> ~/.ssh/known_hosts
+    - name: Set up SSH key
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      # Étape 3: Déployer sur le VPS
-      - name: Deploy to VPS
-        run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no guy001@54.36.163.57 << 'EOF'
-            # Supprimer l'ancienne version
-            sudo rm -rf /var/www/travel
+    - name: Verify SSH connection
+      run: |
+        echo "Testing SSH connection..."
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa guy001@54.36.163.57 "echo 'SSH connection successful'"
 
-            # Cloner la nouvelle version du dépôt
-            cd /var/www
-            git clone https://github.com/messi657816954/travel.git
+    - name: Remove old version and clone new one
+      run: |
+        echo "Removing old version..."
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa guy001@54.36.163.57 << 'EOF'
+          echo "Removing /var/www/travel..."
+          echo "Guy@vps123" | sudo -S rm -rf /var/www/travel
+          echo "Old version removed"
 
-            # Redémarrer Apache
-            sudo systemctl restart apache2
-          EOF
+          echo "Cloning new version..."
+          cd /var/www
+          git clone https://github.com/messi657816954/travel.git
+          echo "New version cloned"
+        EOF
+
+    - name: Restart Apache
+      run: |
+        echo "Restarting Apache..."
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa guy001@54.36.163.57 << 'EOF'
+          echo "Restarting Apache..."
+          echo "Guy@vps123" | sudo -S systemctl restart apache2
+          echo "Apache restarted"
+        EOF
