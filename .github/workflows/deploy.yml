@@ -3,12 +3,12 @@ name: Deploy to VPS
 on:
   push:
     branches:
-      - master  # ou la branche de votre choix
-
+      - master  # Déclenche le déploiement lorsqu'il y a un push sur la branche main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -27,8 +27,7 @@ jobs:
             echo "Removing old version..."
             sudo -S rm -rf /var/www/travel <<< 'Guy@vps123'
             echo "Cloning new version..."
-            cd /var/www
-            git clone https://github.com/messi657816954/travel.git travel
+            sudo git clone https://github.com/messi657816954/travel.git /var/www/travel
             echo "New version cloned"
             echo "Restarting Apache..."
             sudo -S systemctl restart apache2 <<< 'Guy@vps123'
