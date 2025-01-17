@@ -1,3 +1,11 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - master  # ou la branche de votre choix
+
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
