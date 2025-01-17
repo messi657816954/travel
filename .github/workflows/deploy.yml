@@ -1,48 +1,28 @@
-name: Deploy to VPS
-
-on:
-  push:
-    branches:
-      - master  # ou la branche de votre choix
-
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Set up SSH key
-      uses: webfactory/ssh-agent@v0.5.3
-      with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 54.36.163.57 >> ~/.ssh/known_hosts
 
-    - name: Verify SSH connection
-      run: |
-        echo "Testing SSH connection..."
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa guy001@54.36.163.57 "echo 'SSH connection successful'"
-
-    - name: Remove old version and clone new one
-      run: |
-        echo "Removing old version..."
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa guy001@54.36.163.57 << 'EOF'
-          echo "Removing /var/www/travel..."
-          echo "Guy@vps123" | sudo -S rm -rf /var/www/travel
-          echo "Old version removed"
-
-          echo "Cloning new version..."
-          cd /var/www
-          git clone https://github.com/messi657816954/travel.git
-          echo "New version cloned"
-        EOF
-
-    - name: Restart Apache
-      run: |
-        echo "Restarting Apache..."
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa guy001@54.36.163.57 << 'EOF'
-          echo "Restarting Apache..."
-          echo "Guy@vps123" | sudo -S systemctl restart apache2
-          echo "Apache restarted"
-        EOF
+      - name: Deploy to VPS
+        run: |
+          echo "Connecting to the server..."
+          sshpass -p 'Guy@vps123' ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no guy001@54.36.163.57 << 'EOF'
+            echo "Removing old version..."
+            sudo -S rm -rf /var/www/travel <<< 'Guy@vps123'
+            echo "Cloning new version..."
+            cd /var/www
+            git clone https://github.com/messi657816954/travel.git travel
+            echo "New version cloned"
+            echo "Restarting Apache..."
+            sudo -S systemctl restart apache2 <<< 'Guy@vps123'
+            echo "Deployment complete!"
+          EOF
