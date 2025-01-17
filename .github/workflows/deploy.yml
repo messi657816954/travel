@@ -1,41 +1,38 @@
-name: Deploy to VPS
+name: Deploy to Production
 
 on:
   push:
     branches:
-      - master  # Branche principale à surveiller
+      - master  # ou main selon votre branche principale
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # Étape 1: Vérifier le code
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Étape 2: Configurer SSH
       - name: Set up SSH
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H 54.36.163.57 >> ~/.ssh/known_hosts
 
-
-      - name: Deploy application
+      # Étape 3: Déployer sur le VPS
+      - name: Deploy to VPS
         run: |
-          ssh -o StrictHostKeyChecking=no guy001@54.36.163.57 << 'EOF'
-          set -e
-          echo "Stopping Apache..."
-          sudo systemctl stop apache2
-          echo "Removing old application..."
-          sudo rm -rf /var/www/travel
-          echo "Cloning new application..."
-          sudo git clone https://https://github.com/messi657816954/travel.git /var/www/travel
-          echo "Setting permissions..."
-          sudo chown -R www-data:www-data /var/www/travel
-          sudo chmod -R 755 /var/www/travel
-          echo "Restarting Apache..."
-          sudo systemctl start apache2
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no guy001@54.36.163.57 << 'EOF'
+            # Supprimer l'ancienne version
+            sudo rm -rf /var/www/travel
+
+            # Cloner la nouvelle version du dépôt
+            cd /var/www
+            git clone https://github.com/messi657816954/travel.git
+
+            # Redémarrer Apache
+            sudo systemctl restart apache2
           EOF
