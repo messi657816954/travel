@@ -27,8 +27,8 @@ class CreateReserverKilogrammesAPIView(APIView):
             reservation_data = {
                 'nombre_kg': request.data['nombre_kg'],
                 'montant': Decimal(request.data['nombre_kg']) * annonce.montant_par_kg,
-                'nom_personne_a_contacter': request.data['nom_destinataire'],
-                'telephone_personne_a_contacter': request.data['telephone_destinataire'],
+                'nom_personne_a_contacter': request.data['nom_personne_a_contacter'],
+                'telephone_personne_a_contacter': request.data['telephone_personne_a_contacter'],
                 'statut': 'PENDING',
                 'reference': generate_reference(),
                 'user': request.user.id,
@@ -46,7 +46,7 @@ class CreateReserverKilogrammesAPIView(APIView):
             annonce.save()
 
             # Notifier l'annonceur
-            self._notifier_annonceur(annonce, reservation)
+            # self._notifier_annonceur(annonce, reservation)
 
             return Response(reponses(success=1, results=serializer.data))
 
@@ -60,29 +60,25 @@ class CreateReserverKilogrammesAPIView(APIView):
 class UpdateReserverKilogrammesAPIView(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def post(self, request):
+    def post(self, request,annonce_id):
         try:
             reservation = Reservation.objects.get(id=request.data['reservation_id'])
-            annonce = Annonce.objects.get(id=request.data['annonce_id'])
+            annonce = Annonce.objects.get(id=annonce_id)
 
             if annonce.nombre_kg_dispo < int(request.data['nombre_kg']):
                 return Response(reponses(success=0, error_msg='Kilogrammes demandés non disponibles'))
 
-            # Modifier la réservation
-            reservation.nombre_kg = request.data['nombre_kg']
-            reservation.montant = Decimal(request.data['nombre_kg']) * annonce.montant_par_kg
-            reservation.nom_personne_a_contacter = request.data['nom_personne_a_contacter']
-            reservation.nombre_kg = request.data['nombre_kg']
-            reservation.nombre_kg = request.data['nombre_kg']
-
-            serializer = ReservationSerializer(reservation)
-            reservation.save()
-            # Mettre à jour les kg disponibles
-            annonce.nombre_kg_dispo -= int(request.data['nombre_kg'])
-            annonce.save()
-
-
-            return Response(reponses(success=1, results=serializer.data))
+            data = request.data.copy()
+            data['montant'] = Decimal(request.data['nombre_kg']) * annonce.montant_par_kg
+            serializer = ReservationSerializer(reservation, data=data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                # Mettre à jour les kg disponibles
+                annonce.nombre_kg_dispo -= int(request.data['nombre_kg'])
+                annonce.save()
+                return Response(reponses(success=1, results=serializer.data))
+            res = reponses(success=0, error_msg=serializer.errors)
+            return Response(res)
 
         except Annonce.DoesNotExist:
             return Response(reponses(success=0, error_msg='Annonce non trouvée'))
@@ -111,6 +107,35 @@ class CancelReservationAPIView(APIView):
             return Response(reponses(success=0, error_msg='Réservation non trouvée'))
         except Exception as e:
             return Response(reponses(success=0, error_msg=str(e)))
+
+
+
+class ReservationsListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        moyens = Reservation.objects.filter(user=request.user)
+        serializer = ReservationSerializer(moyens, many=True)
+        res = reponses(success=1, results=serializer.data, error_msg='')
+        return Response(res)
+
+class ReservationDetailAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, pk):
+        try:
+            return Reservation.objects.get(pk=pk, user=self.request.user)
+        except Reservation.DoesNotExist:
+            return None
+
+    def get(self, request, pk, *args, **kwargs):
+        reserve = self.get_object(pk)
+        if not reserve:
+            res = reponses(success=0, error_msg="Reservation introuvable.")
+            return Response(res)
+        serializer = ReservationSerializer(reserve)
+        res = reponses(success=1, results=serializer.data, error_msg='')
+        return Response(res)
 
 
 

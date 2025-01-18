@@ -62,10 +62,10 @@ class User(AbstractBaseUser,PermissionsMixin):
 class MoyenPaiement(models.Model):
     type = models.CharField(max_length=50)
     telephone = models.CharField(max_length=20)
-    numero_carte = models.CharField(max_length=16)
-    email = models.EmailField()
-    cvv = models.CharField(max_length=4)
-    date_expiration = models.DateField()
+    numero_carte = models.CharField(max_length=16, null=True, blank=True)
+    email = models.EmailField(null=True, blank=True)
+    cvv = models.CharField(max_length=4, null=True, blank=True)
+    date_expiration = models.CharField(max_length=10, null=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
 
@@ -74,6 +74,15 @@ class Compte(models.Model):
     real_balance = models.DecimalField(max_digits=10, decimal_places=2)
     incoming_amount = models.DecimalField(max_digits=10, decimal_places=2)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    ACCOUNT_CHOICES = [
+        ('PLATEFORME', 'PLATEFORME'),
+        ('USER', 'USER'),
+    ]
+    type_compte = models.CharField(
+        max_length=10,
+        choices=ACCOUNT_CHOICES,
+        default='USER'
+    )
 
 
 

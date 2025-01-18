@@ -66,19 +66,22 @@ class RegistrationAPIView(generics.GenericAPIView):
         if serializer.is_valid(raise_exception=True):
             user = serializer.save()
             # send_otp(serializer.data['email'])
-            # cpte = Compte.objects.create(
-            #     virtual_balance=0,
-            #     real_balance=0,
-            #     incoming_amount=0,
-            #     user=user  # Utilisation de l'instance utilisateur
-            # )
-            # compte_serializer = CompteSerializer(cpte)
+            cpte = Compte.objects.create(
+                virtual_balance=0,
+                real_balance=0,
+                incoming_amount=0,
+                user=user  # Utilisation de l'instance utilisateur
+            )
+            moyens = MoyenPaiement.objects.filter(user=user)
+            payment_method = MoyenPaiementSerializer(moyens, many=True)
+            compte_serializer = CompteSerializer(cpte)
             data['response'] = "Registration Successful!"
             refresh = RefreshToken.for_user(user=user)
             data['refresh'] = str(refresh)
             data['access'] = str(refresh.access_token)
-            # data['compte'] = compte_serializer.data
-            # data['user'] = self.get_serializer(user)
+            data['account'] = compte_serializer.data
+            data['user'] = self.get_serializer(user).data
+            data['payment_method'] = payment_method.data
 
         res = reponses(success=1, results=data, error_msg='')
         return Response(res)
@@ -261,8 +264,6 @@ class PerformForgotPasswordAPIView(APIView):
     model = User
     permission_classes = [IsAuthenticated]
 
-
-
     def post(self, request, *args, **kwargs):
         user = User.objects.filter(email=request.data['email'])
         if user:
@@ -286,7 +287,7 @@ class InitForgotPasswordAPIView(APIView):
     def post(self, request, *args, **kwargs):
 
         code = generate_password()
-        print("------------code",code)
+        print("------------code : ",code)
         user = User.objects.filter(email=request.data['email'])
         if user:
             user[0].reset_password_code = code
@@ -339,10 +340,10 @@ class UserDetailClientView(APIView):
                 'compte': compte_serializer.data,  # Données du compte
                 'type_paiement': type_paiement_serializer.data  # Données du compte
             }
-            res = self.reponses(success=1, results=data_serializer.data)
+            res = reponses(success=1, results=response_data)
             return Response(res)
         except User.DoesNotExist:
-            res = self.reponses(success=0, error_msg="Cet utilisateur n'est pas un UTILISATEUR")
+            res = reponses(success=0, error_msg="Cet utilisateur n'est pas un UTILISATEUR")
             return Response(res)
 
     def get_object(self):
@@ -363,8 +364,8 @@ class MoyenPaiementListCreateAPIView(APIView):
         return Response(res, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
-        data = request.data
-        data['user'] = request.user.id  # Associer l'utilisateur authentifié
+        data = request.data.copy()
+        data['user'] = request.user.id
         serializer = MoyenPaiementSerializer(data=data)
         if serializer.is_valid():
             serializer.save()

@@ -1,7 +1,4 @@
-from datetime import timezone
-
-
-
+from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -168,8 +165,6 @@ class ReserverKilogrammesAPIView(APIView):
         mail.send(fail_silently=True)
 
 
-import asyncio
-from asgiref.sync import sync_to_async
 
 async def send_email_async(subject, message, recipient_email):
     mail = EmailMessage(
@@ -179,7 +174,7 @@ async def send_email_async(subject, message, recipient_email):
         [recipient_email],
     )
     mail.content_subtype = "html"
-    await sync_to_async(mail.send)(fail_silently=True)
+    mail.send(fail_silently=True)
 
 
 class ConfirmerReceptionColisAPIView(APIView):
@@ -195,6 +190,7 @@ class ConfirmerReceptionColisAPIView(APIView):
 
             # Générer et envoyer le code de confirmation au destinataire
             code_livraison = generate_reference()
+            print("-------------code_livraison---: ",code_livraison)
 
             # Mettre à jour le statut de la réservation
             reservation.statut = 'CONFIRM'
@@ -209,12 +205,31 @@ class ConfirmerReceptionColisAPIView(APIView):
             }
             message = render_to_string('confirm_reception_colis.html', ctx)
             # Envoyer l'email de manière asynchrone
-            asyncio.create_task(send_email_async("Code de confirmation de réception", message, reservation.user.email))
+            send_email_async("Code de confirmation de réception", message, reservation.user.email)
 
             return Response(reponses(success=1, results={'message': 'Code de confirmation envoyé'}))
 
         except Reservation.DoesNotExist:
             return Response(reponses(success=0, error_msg='Réservation non trouvée'))
+        except Exception as e:
+            return Response(reponses(success=0, error_msg=str(e)))
+
+
+
+
+class PublierAnnonceAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, annonce_id):
+        try:
+            annonce = Annonce.objects.get(id=annonce_id)
+            # Mettre à jour le statut de l'annonce'
+            annonce.est_publie = True
+            annonce.save()
+            return Response(reponses(success=1, results={'message': 'annonce publiée avec succès.'}))
+
+        except Reservation.DoesNotExist:
+            return Response(reponses(success=0, error_msg='Annonce non trouvée'))
         except Exception as e:
             return Response(reponses(success=0, error_msg=str(e)))
 
@@ -234,9 +249,10 @@ class ConfirmerReceptionColisAPIView(APIView):
 class ConfirmerLivraisonAPIView(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def post(self, request, reservation_id):
+    def post(self, request):
         try:
             code_confirmation = request.data.get('code_confirmation')
+            reservation_id = request.data.get('reservation_id')
             reservation = Reservation.objects.get(id=reservation_id)
 
             # Vérifier le code de confirmation
@@ -256,7 +272,7 @@ class ConfirmerLivraisonAPIView(APIView):
                 'reservation_ref': reservation.reference
             }
             message = render_to_string('confirm_livraison_colis.html', ctx)
-            asyncio.create_task(send_email_async("Livraison du colis", message, reservation.user.email))
+            send_email_async("Livraison du colis", message, reservation.user.email)
 
             return Response(reponses(success=1, results={'message': 'Livraison confirmée avec succès'}))
 
@@ -265,4 +281,54 @@ class ConfirmerLivraisonAPIView(APIView):
         except Exception as e:
             return Response(reponses(success=0, error_msg=str(e)))
 
+
+
+
+
+class AnnoncesListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        moyens = Annonce.objects.filter(createur=request.user)
+        serializer = AnnonceSerializer(moyens, many=True)
+        res = reponses(success=1, results=serializer.data, error_msg='')
+        return Response(res)
+
+
+
+class AnnonceDetailAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, pk):
+        try:
+            return Annonce.objects.get(pk=pk, createur=self.request.user)
+        except Annonce.DoesNotExist:
+            return None
+
+    def get(self, request, pk, *args, **kwargs):
+        reserve = self.get_object(pk)
+        if not reserve:
+            res = reponses(success=0, error_msg="Reservation introuvable.")
+            return Response(res)
+        serializer = AnnonceSerializer(reserve)
+        res = reponses(success=1, results=serializer.data, error_msg='')
+        return Response(res)
+
+
+
+    def _notifier_annonceur(self, annonce, reservation):
+        ctx = {
+            'annonce_ref': annonce.reference,
+            'reservation_ref': reservation.reference,
+            'kg_reserves': reservation.nombre_kg
+        }
+        message = render_to_string('nouvelle_reservation.html', ctx)
+        mail = EmailMessage(
+            "Nouvelle réservation",
+            message,
+            settings.EMAIL_HOST_USER,
+            [annonce.createur.email]
+        )
+        mail.content_subtype = "html"
+        mail.send(fail_silently=True)
 

@@ -3,12 +3,15 @@ from .views import (
     CreateAnnonceAPIView,
     ReserverKilogrammesAPIView,
     ConfirmerReceptionColisAPIView,
-    ConfirmerLivraisonAPIView
+    ConfirmerLivraisonAPIView, PublierAnnonceAPIView, AnnonceDetailAPIView, AnnoncesListAPIView
 )
 
 urlpatterns = [
-    path('annonces/create/', CreateAnnonceAPIView.as_view(), name='create-annonce'),
-    path('annonces/reserver/', ReserverKilogrammesAPIView.as_view(), name='reserver-kilogrammes'),
-    path('reservations/<int:reservation_id>/confirmer-reception/', ConfirmerReceptionColisAPIView.as_view(), name='confirmer-reception'),
-    path('reservations/<int:reservation_id>/confirmer-livraison/', ConfirmerLivraisonAPIView.as_view(), name='confirmer-livraison'),
+    path('create/', CreateAnnonceAPIView.as_view(), name='create-annonce'),
+    path('reserver/', ReserverKilogrammesAPIView.as_view(), name='reserver-kilogrammes'),
+    path('<int:annonce_id>/publier/', PublierAnnonceAPIView.as_view(), name='publier-annonce'),
+    path('<int:reservation_id>/confirmer-reception/', ConfirmerReceptionColisAPIView.as_view(), name='confirmer-reception'),
+    path('confirmer-livraison/', ConfirmerLivraisonAPIView.as_view(), name='confirmer-livraison'),
+    path('<int:pk>/detail/', AnnonceDetailAPIView.as_view(), name='detail'),
+    path('list/', AnnoncesListAPIView.as_view(), name='list'),
 ]
