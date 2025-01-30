@@ -1,19 +1,16 @@
+from annonces.models import Reservation
 from .serializers import RegistrationSerializer, VerifyOTPSerializer, MyTokenObtainPairSerializer, \
     ChangePasswordSerializer, UserDetailSerializer, CompteSerializer, MoyenPaiementSerializer
 from rest_framework import generics,status
 from rest_framework.views import APIView
 from rest_framework.permissions import *
-from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from users.emails import *
-from users.models import User, Compte, MoyenPaiement
+from annonces.models import  Paiement, Transaction
+from users.models import User, Compte, MoyenPaiementUser
 from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework.throttling import ScopedRateThrottle
 from django.shortcuts import get_object_or_404
 
 
-from ..utils import reponses, generate_password
 from django.core.mail import send_mail, EmailMessage
 from users.utils import *
 from django.conf import settings
@@ -21,9 +18,10 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.exceptions import AuthenticationFailed
 
 from django.db import transaction
+
+
 
 
 class MyTokenObtainPairView(TokenObtainPairView):
@@ -46,6 +44,9 @@ class MyTokenObtainPairView(TokenObtainPairView):
         custom_response_data = {
             'access_token': response_data.get('access'),
             'refresh_token': response_data.get('refresh'),
+            'user': response_data.get('user'),  # Ajoutez les infos de l'utilisateur
+            'compte': response_data.get('compte'),  # Ajoutez les infos de l'utilisateur
+            'infos_methode_paiement': response_data.get('infos_methode_paiement'),  # Ajoutez les infos de l'utilisateur
 
         }
         res = reponses(success=1, results=custom_response_data, error_msg='')
@@ -53,13 +54,11 @@ class MyTokenObtainPairView(TokenObtainPairView):
 
 
 
-
-
-
 class RegistrationAPIView(generics.GenericAPIView):
     '''Registers user'''
     serializer_class = RegistrationSerializer
 
+    @transaction.atomic
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         data = {}
@@ -69,10 +68,9 @@ class RegistrationAPIView(generics.GenericAPIView):
             cpte = Compte.objects.create(
                 virtual_balance=0,
                 real_balance=0,
-                incoming_amount=0,
                 user=user  # Utilisation de l'instance utilisateur
             )
-            moyens = MoyenPaiement.objects.filter(user=user)
+            moyens = MoyenPaiementUser.objects.filter(user=user)
             payment_method = MoyenPaiementSerializer(moyens, many=True)
             compte_serializer = CompteSerializer(cpte)
             data['response'] = "Registration Successful!"
@@ -81,7 +79,7 @@ class RegistrationAPIView(generics.GenericAPIView):
             data['access'] = str(refresh.access_token)
             data['account'] = compte_serializer.data
             data['user'] = self.get_serializer(user).data
-            data['payment_method'] = payment_method.data
+            data['user_payment_method'] = payment_method.data
 
         res = reponses(success=1, results=data, error_msg='')
         return Response(res)
@@ -106,7 +104,6 @@ class VerifyOTPAPIView(generics.GenericAPIView):
 
 
 
-
 class LogoutBlacklistTokenUpdateView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = ()
@@ -121,10 +118,6 @@ class LogoutBlacklistTokenUpdateView(APIView):
         except Exception as e:
             res = reponses(success=0,  error_msg='Exception')
             return Response(res)
-
-
-
-
 
 
 
@@ -204,11 +197,6 @@ class PerformRegistrationAPIView(APIView):
 
 
 
-
-
-
-
-
 class Logout(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -227,9 +215,6 @@ class Logout(APIView):
         logout(request)
         res = reponses(success=1, results="Déconnexion effectué avec Succès".encode('utf8'),error_msg='')
         return Response(res)
-
-
-
 
 # -----------------------------------------------Fin mise àjour des informations des utilisateurs
 
@@ -261,8 +246,9 @@ class ChangePasswordView(APIView):
 
 
 class PerformForgotPasswordAPIView(APIView):
+    permission_classes = (AllowAny,)
     model = User
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         user = User.objects.filter(email=request.data['email'])
@@ -317,12 +303,6 @@ class InitForgotPasswordAPIView(APIView):
 
 
 
-
-
-
-
-
-
 class UserDetailClientView(APIView):
     permission_classes = [IsAuthenticated ]
     serializer_class = UserDetailSerializer
@@ -333,7 +313,7 @@ class UserDetailClientView(APIView):
             data_serializer = self.serializer_class(user_obj)
             cpte = Compte.objects.get(user=request.user)
             compte_serializer = CompteSerializer(cpte)
-            moyens = MoyenPaiement.objects.filter(user=request.user)
+            moyens = MoyenPaiementUser.objects.filter(user=request.user)
             type_paiement_serializer = MoyenPaiementSerializer(moyens, many=True)
             response_data = {
                 **data_serializer.data,  # Données de l'utilisateur
@@ -353,12 +333,11 @@ class UserDetailClientView(APIView):
 
 
 
-
 class MoyenPaiementListCreateAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        moyens = MoyenPaiement.objects.filter(user=request.user)
+        moyens = MoyenPaiementUser.objects.filter(user=request.user)
         serializer = MoyenPaiementSerializer(moyens, many=True)
         res = reponses(success=1, results=serializer.data, error_msg='')
         return Response(res, status=status.HTTP_200_OK)
@@ -376,14 +355,13 @@ class MoyenPaiementListCreateAPIView(APIView):
 
 
 
-
 class MoyenPaiementDetailAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get_object(self, pk):
         try:
-            return MoyenPaiement.objects.get(pk=pk, user=self.request.user)
-        except MoyenPaiement.DoesNotExist:
+            return MoyenPaiementUser.objects.get(pk=pk, user=self.request.user)
+        except MoyenPaiementUser.DoesNotExist:
             return None
 
     def get(self, request, pk, *args, **kwargs):
@@ -461,6 +439,94 @@ class MoyenPaiementDetailAPIView(APIView):
 
         return RESPONSE_MSG
 
+
+
+class InitierPaiementAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        try:
+            # Créer un nouvel objet Paiement avec l'état 'PENDING'
+            paiement = Paiement.objects.create(
+                status='PENDING',
+                telephone=request.data.get('telephone'),
+                numero_carte=request.data.get('numero_carte'),
+                email=request.data.get('email'),
+                cvv=request.data.get('cvv'),
+                date_expiration=request.data.get('date_expiration'),
+                user=request.user,
+                montant=request.data.get('montant'),
+                type=request.data.get('type_paiement'),
+                # reservation=reservation
+            )
+            user_compte = Compte.objects.get(user=request.user)  # Compte de l'utilisateur de l'annonce
+
+            # Créer les transactions
+            from decimal import Decimal  # Pour gérer les montants
+            montant = Decimal(request.data.get('montant'))
+
+            # Transaction DEBIT pour l'utilisateur connecté
+            Transaction.objects.create(
+                montant=montant,
+                # reservation=reservation,
+                compte=user_compte,
+                transaction_type="DEPOSITE",
+                # transaction_status="PENDING",
+                transaction_status="SUCCESSFUL", # pour les tests
+                 # pour les tests
+            )
+            user_compte.calculate_balances() # pour les tests
+
+            # TODO: Ajouter un envoi de notification ou d'email si nécessaire
+
+            return Response(reponses(success=1, results={'message': 'Paiement initié avec succès', 'paiement_id': paiement.id}))
+
+        except Reservation.DoesNotExist:
+            return Response(reponses(success=0, error_msg='Réservation non trouvée'))
+        except Exception as e:
+            return Response(reponses(success=0, error_msg=str(e)))
+
+
+
+class InitPhoneOtpAPIView(APIView):
+    permission_classes = (AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+# request.data['phone']
+        code = generate_password()
+        print("------------code otp : ",code)
+        user = User.objects.filter(pk=request.user.id)
+        if user:
+            user[0].otp = code
+            user[0].save()
+            # todo: envoyer code par sms request.data['phone']
+
+            res = reponses(success=1, results="Code envoyé par sms avec succès", error_msg='')
+            return Response(res)
+
+        else:
+            msg = "Pas d'utilisateur avec cet email {} !".format(request.data['email'])
+            res = reponses(success=0, error_msg=msg.encode('utf8'))
+            return Response(res)
+
+
+
+class PerformOtpAPIView(APIView):
+    model = User
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        user = User.objects.filter(pk=request.user.id)
+        if user:
+            if user[0].otp == request.data['otp']:
+                user[0].is_phone_verify = True
+                user[0].save()
+                res = reponses(success=1, results="Otp a été effectué avec succès".encode('utf8'),error_msg='')
+                return Response(res)
+            res = reponses(success=0, error_msg="Le code ne correspond pas")
+            return Response(res)
+        res = reponses(success=0, error_msg="Pas d'utilisateur correspondant à cet email")
+        return Response(res)
 
 
 

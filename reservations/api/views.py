@@ -5,25 +5,39 @@ from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.conf import settings
 from decimal import Decimal
-
-from annonces.models import Annonce
-from users.utils import reponses, generate_reference
+from annonces.models import Annonce, TypeBagageReservation
+from annonces.models import Compte, Transaction
+from commons.api.serializers import TypeBagageSerializer
+from commons.models import TypeBagage
+from users.utils import reponses, generate_reference, generate_password
 from .serializers import ReservationSerializer
+from django.db import transaction
+from annonces.models import Reservation
 
-from ..models import Reservation
 
 
-class CreateReserverKilogrammesAPIView(APIView):
+
+
+class ReserverKilogrammesAPIView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def post(self, request):
         try:
             annonce = Annonce.objects.get(id=request.data['annonce_id'])
-
             if annonce.nombre_kg_dispo < int(request.data['nombre_kg']):
                 return Response(reponses(success=0, error_msg='Kilogrammes demandés non disponibles'))
 
-            # Créer la réservation
+            montant_reservation= Decimal(request.data['nombre_kg']) * annonce.montant_par_kg
+            # check si le solde theorique de son compte est superieur au montant de la reservation
+            compte = Compte.objects.get(user=request.user)
+            balances = compte.calculate_balances()
+            # if balances['real_balance'] == 0:
+            #     return Response(reponses(success=0, error_msg='Recharger votre compte .'))
+            #
+            # if montant_reservation < balances['virtual_balance']:
+            #     return Response(reponses(success=0, error_msg='Kilogrammes demandés non disponibles'))
+
+            # Créer la réservation pending
             reservation_data = {
                 'nombre_kg': request.data['nombre_kg'],
                 'montant': Decimal(request.data['nombre_kg']) * annonce.montant_par_kg,
@@ -35,20 +49,27 @@ class CreateReserverKilogrammesAPIView(APIView):
                 'annonce': request.data['annonce_id']
             }
 
-            serializer = ReservationSerializer(data=reservation_data)
-            if not serializer.is_valid():
-                return Response(reponses(success=0, error_msg=serializer.errors))
+            reservation_serializer = ReservationSerializer(data=reservation_data)
+            if not reservation_serializer.is_valid():
+                return Response(reponses(success=0, error_msg=reservation_serializer.errors))
 
-            reservation = serializer.save()
+            reservation = reservation_serializer.save()
 
-            # Mettre à jour les kg disponibles
-            annonce.nombre_kg_dispo -= int(request.data['nombre_kg'])
-            annonce.save()
+            list_id_bagage_auto = list()
+            for rec in request.data['list_bagage']:
+                bagage = TypeBagage.objects.get(pk=rec)
+                list_id_bagage_auto.append(TypeBagageReservation(type_bagage=bagage,reservation=reservation))
 
-            # Notifier l'annonceur
-            # self._notifier_annonceur(annonce, reservation)
+            TypeBagageReservation.objects.bulk_create(list_id_bagage_auto)
+            # 3. Préparer la réponse avec les données combinées
+            list_bagage_auto = TypeBagage.objects.filter(id__in=request.data['list_bagage'])
+            response_data = {
+                **reservation_serializer.data,
+                # 'voyage': voyage_serializer.data,
+                'type_bagage': TypeBagageSerializer(list_bagage_auto,many=True).data,
+            }
 
-            return Response(reponses(success=1, results=serializer.data))
+            return Response(reponses(success=1, results=response_data))
 
         except Annonce.DoesNotExist:
             return Response(reponses(success=0, error_msg='Annonce non trouvée'))
@@ -60,25 +81,52 @@ class CreateReserverKilogrammesAPIView(APIView):
 class UpdateReserverKilogrammesAPIView(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def post(self, request,annonce_id):
+    def post(self, request):
         try:
-            reservation = Reservation.objects.get(id=request.data['reservation_id'])
-            annonce = Annonce.objects.get(id=annonce_id)
+            reservation = Reservation.objects.get(id=request.data['reservation_id'],statut="PENDING")
+            annonce = Annonce.objects.get(id=reservation.annonce.id)
 
             if annonce.nombre_kg_dispo < int(request.data['nombre_kg']):
                 return Response(reponses(success=0, error_msg='Kilogrammes demandés non disponibles'))
 
-            data = request.data.copy()
-            data['montant'] = Decimal(request.data['nombre_kg']) * annonce.montant_par_kg
-            serializer = ReservationSerializer(reservation, data=data, partial=True)
-            if serializer.is_valid():
-                serializer.save()
-                # Mettre à jour les kg disponibles
-                annonce.nombre_kg_dispo -= int(request.data['nombre_kg'])
-                annonce.save()
-                return Response(reponses(success=1, results=serializer.data))
-            res = reponses(success=0, error_msg=serializer.errors)
-            return Response(res)
+            montant_reservation = Decimal(request.data['nombre_kg']) * annonce.montant_par_kg
+            # check si le solde theorique de son compte est superieur au montant de la reservation
+            compte = Compte.objects.get(user=request.user)
+            balances = compte.calculate_balances()
+            # if balances['real_balance'] == 0:
+            #     return Response(reponses(success=0, error_msg='Recharger votre compte .'))
+            #
+            # if montant_reservation < balances['virtual_balance']:
+            #     return Response(reponses(success=0, error_msg='Kilogrammes demandés non disponibles'))
+
+            # Créer la réservation pending
+            reservation_data = {
+                'nombre_kg': request.data['nombre_kg'],
+                'montant': Decimal(request.data['nombre_kg']) * annonce.montant_par_kg,
+                'nom_personne_a_contacter': request.data['nom_personne_a_contacter'],
+                'telephone_personne_a_contacter': request.data['telephone_personne_a_contacter'],
+            }
+
+            reservation_serializer = ReservationSerializer(reservation, data=reservation_data, partial=True)
+            if not reservation_serializer.is_valid():
+                return Response(reponses(success=0, error_msg=reservation_serializer.errors))
+
+            reservation = reservation_serializer.save()
+            TypeBagageReservation.objects.filter(reservation=reservation).delete()
+            list_id_bagage_auto = list()
+            for rec in request.data['list_bagage']:
+                bagage = TypeBagage.objects.get(pk=rec)
+                list_id_bagage_auto.append(TypeBagageReservation(type_bagage=bagage,reservation=reservation))
+
+            TypeBagageReservation.objects.bulk_create(list_id_bagage_auto)
+            # 3. Préparer la réponse avec les données combinées
+            list_bagage_auto = TypeBagage.objects.filter(id__in=request.data['list_bagage'])
+            response_data = {
+                **reservation_serializer.data,
+                'bagage_auto': TypeBagageSerializer(list_bagage_auto,many=True).data,
+            }
+
+            return Response(reponses(success=1, results=response_data))
 
         except Annonce.DoesNotExist:
             return Response(reponses(success=0, error_msg='Annonce non trouvée'))
@@ -86,13 +134,87 @@ class UpdateReserverKilogrammesAPIView(APIView):
             return Response(reponses(success=0, error_msg=str(e)))
 
 
-
-
-
-
-class CancelReservationAPIView(APIView):
+class ValidateReservationAPIView(APIView):
     permission_classes = (IsAuthenticated,)
 
+    @transaction.atomic
+    def post(self, request, reservation_id):
+        try:
+            reservation = Reservation.objects.get(id=reservation_id)
+            annonce = Annonce.objects.get(id=reservation.annonce.pk)
+            # Mettre à jour le statut de la réservation
+            reservation.statut = 'VALIDATE'
+            reservation.save()
+            annonce.nombre_kg_dispo -= int(reservation.nombre_kg)
+            annonce.save()
+            user_compte = Compte.objects.get(user=request.user)  # Compte de l'utilisateur connecté
+            annonce_compte = Compte.objects.get(user=annonce.createur)  # Compte de l'utilisateur de l'annonce
+
+            # Créer les transactions
+            from decimal import Decimal  # Pour gérer les montants
+            montant = Decimal(reservation.montant)
+
+            # Transaction DEBIT pour l'utilisateur connecté
+            Transaction.objects.create(
+                montant=montant,
+                reservation=reservation,
+                compte=user_compte,
+                transaction_type="DEBIT",
+                transaction_status="PENDING",
+            )
+            # Transaction CREDIT pour l'utilisateur de l'annonce
+            Transaction.objects.create(
+                montant=montant,
+                reservation=reservation,
+                compte=annonce_compte,
+                transaction_type="CREDIT",
+                transaction_status="PENDING",
+            )
+            user_compte.calculate_balances()
+            annonce_compte.calculate_balances()
+            return Response(reponses(success=1, results={'message': 'Reservation validée avec succès'}))
+        except Reservation.DoesNotExist:
+            return Response(reponses(success=0, error_msg='Réservation non trouvée'))
+        except Exception as e:
+            return Response(reponses(success=0, error_msg=str(e)))
+
+
+class ConfirmReservationByAnnonceurAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    @transaction.atomic
+    def post(self, request, reservation_id):
+        try:
+            reservation = Reservation.objects.get(id=reservation_id)
+            # Mettre à jour le statut de la réservation
+            code_reception = generate_password()
+            print("-----------code_reception-----: ",code_reception)
+            reservation.statut = 'VALIDATE'
+            reservation.code_reception = code_reception
+            reservation.save()
+            user_compte = Compte.objects.get(user=request.user)  # Compte de l'utilisateur connecté
+            reservation_compte = Compte.objects.get(user=reservation.user)  # Compte de l'utilisateur de l'annonce
+
+            # Confirmer Transaction DEBIT
+            transaction_debit = Transaction.objects.get(compte=reservation_compte,reservation=reservation,transaction_status="PENDING",transaction_type="DEBIT")
+            transaction_credit = Transaction.objects.get(compte=user_compte,reservation=reservation,transaction_status="PENDING",transaction_type="CREDIT")
+            transaction_debit.transaction_status  = "SUCCESSFUL"
+            transaction_credit.transaction_status = "SUCCESSFUL"
+            transaction_credit.save()
+            transaction_debit.save()
+            user_compte.calculate_balances()
+            reservation_compte.calculate_balances()
+            return Response(reponses(success=1, results={'message': 'Reservation annulée avec succès'}))
+        except Reservation.DoesNotExist:
+            return Response(reponses(success=0, error_msg='Réservation non trouvée'))
+        except Exception as e:
+            return Response(reponses(success=0, error_msg=str(e)))
+
+
+class CancelReservationByAnnonceurAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    @transaction.atomic
     def post(self, request, reservation_id):
         try:
             reservation = Reservation.objects.get(id=reservation_id)
@@ -102,12 +224,85 @@ class CancelReservationAPIView(APIView):
             reservation.save()
             annonce.nombre_kg_dispo += int(reservation.nombre_kg)
             annonce.save()
+            user_compte = Compte.objects.get(user=request.user)  # Compte de l'utilisateur connecté
+            reservation_compte = Compte.objects.get(user=reservation.user)  # Compte de l'utilisateur de l'annonce
+
+            # Confirmer Transaction DEBIT
+            transaction_debit = Transaction.objects.get(compte=reservation_compte,reservation=reservation,transaction_status="PENDING")
+            transaction_credit = Transaction.objects.get(compte=user_compte,reservation=reservation,transaction_status="PENDING")
+            transaction_debit.transaction_status  = "CANCEL"
+            transaction_credit.transaction_status = "CANCEL"
+            transaction_credit.save()
+            transaction_debit.save()
+            user_compte.calculate_balances()
+            reservation_compte.calculate_balances()
             return Response(reponses(success=1, results={'message': 'Reservation annulée avec succès'}))
         except Reservation.DoesNotExist:
             return Response(reponses(success=0, error_msg='Réservation non trouvée'))
         except Exception as e:
             return Response(reponses(success=0, error_msg=str(e)))
 
+
+class CancelReservationByReserveurAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, reservation_id):
+        try:
+            reservation = Reservation.objects.get(id=reservation_id)
+            # Mettre à jour le statut de la réservation
+            reservation.statut = 'CANCEL'
+            reservation.save()
+            return Response(reponses(success=1, results={'message': 'Reservation annulée avec succès'}))
+        except Reservation.DoesNotExist:
+            return Response(reponses(success=0, error_msg='Réservation non trouvée'))
+        except Exception as e:
+            return Response(reponses(success=0, error_msg=str(e)))
+
+
+class ReceptionColisReservationAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        try:
+            reservation = Reservation.objects.get(id=request.data['reservation_id'])
+            if reservation.code_reception != request.data['code_reception']:
+                return Response(reponses(success=0, error_msg='Le code de reception du colis ne correspond pas au code de la reservation'))
+            # Mettre à jour le statut de la réservation
+            code_livraison = generate_password()
+            print("-----------code_livraison-----: ",code_livraison)
+            reservation.statut = 'RECEPTION'
+            reservation.code_livraison = code_livraison
+            reservation.save()
+
+            # todo : envoyer le code livraison par email
+            return Response(reponses(success=1, results={'message': 'Reservation annulée avec succès'}))
+        except Reservation.DoesNotExist:
+            return Response(reponses(success=0, error_msg='Réservation non trouvée'))
+        except Exception as e:
+            return Response(reponses(success=0, error_msg=str(e)))
+
+
+class LivraisonColisReservationAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        try:
+            reservation = Reservation.objects.get(id=request.data['reservation_id'])
+            if reservation.code_reception != request.data['code_reception']:
+                return Response(reponses(success=0, error_msg='Le code de livraison du colis ne correspond pas au code de la reservation'))
+            # Mettre à jour le statut de la réservation
+            code_livraison = generate_password()
+            print("-----------code_livraison-----: ",code_livraison)
+            reservation.statut = 'DELIVRATE'
+            reservation.code_livraison = code_livraison
+            reservation.save()
+
+            # todo : envoyer le code livraison par email
+            return Response(reponses(success=1, results={'message': 'Reservation annulée avec succès'}))
+        except Reservation.DoesNotExist:
+            return Response(reponses(success=0, error_msg='Réservation non trouvée'))
+        except Exception as e:
+            return Response(reponses(success=0, error_msg=str(e)))
 
 
 class ReservationsListAPIView(APIView):
@@ -118,6 +313,7 @@ class ReservationsListAPIView(APIView):
         serializer = ReservationSerializer(moyens, many=True)
         res = reponses(success=1, results=serializer.data, error_msg='')
         return Response(res)
+
 
 class ReservationDetailAPIView(APIView):
     permission_classes = [IsAuthenticated]

@@ -1,9 +1,7 @@
-from users.models import User, Compte, MoyenPaiement
+from users.models import User, Compte, MoyenPaiementUser
 from rest_framework import serializers
-# from rest_framework_simplejwt.serializers import TokenRefreshView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from users.models import User as user
-from django.contrib.auth import authenticate
+
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -13,19 +11,49 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
         return token
 
+    def validate(self, attrs):
+        # Validez les données et obtenez les tokens
+        data = super().validate(attrs)
+
+        # Ajoutez les informations de l'utilisateur à la réponse
+        user = self.user
+        cpte = Compte.objects.get(user=user)
+        moyens = MoyenPaiementUser.objects.filter(user=user)
+        data['user'] = {
+            'id': user.id,
+            'username': user.user_name,
+            'email': user.email,
+            'phone': user.email,
+            # Ajoutez d'autres champs de l'utilisateur si nécessaire
+        }
+        data['compte'] = {
+            'id': cpte.id,
+            'virtual_balance': cpte.virtual_balance,
+            'real_balance': cpte.real_balance,
+            # Ajoutez d'autres champs de l'utilisateur si nécessaire
+        }
+        data['infos_methode_paiement'] = MoyenPaiementSerializer(moyens, many=True).data
+
+        return data
+
+    # @classmethod
+    # def get_token(cls, user):
+    #     token = super().get_token(user)
+    #     return token
+
 class RegistrationSerializer(serializers.ModelSerializer):
     # password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
     class Meta:
         model = User
-        fields =  ['email','user_name', 'password', 'otp']
+        fields =  ['email','user_name','phone', 'password', 'otp']
         extra_kwargs = {
             'password': {'write_only': True}
         }
     def save(self):
 
         user = User(email=self.validated_data['email'],
-                    user_name=self.validated_data['user_name'],is_active=True)
-        user.set_password(self.validated_data['password'])
+                    user_name=self.validated_data['user_name'],is_active=True,phone=self.validated_data['phone'])
+        user.set_password(self.validated_data['password'],)
         user.save()
         return user
                     
@@ -52,13 +80,13 @@ class ChangePasswordSerializer(serializers.Serializer):
 class UserDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email', 'user_name', 'otp']
+        fields = ['id', 'email', 'user_name', 'phone','is_phone_verify']
 
 
 
 class MoyenPaiementSerializer(serializers.ModelSerializer):
     class Meta:
-        model = MoyenPaiement
+        model = MoyenPaiementUser
         fields = '__all__'
 
 
