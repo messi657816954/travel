@@ -91,20 +91,22 @@ DATABASES = {
 }
 
 
-#
+
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#         'OPTIONS': {
-#             'timeout': 20,  # Temps d'attente en secondes avant de lever une erreur
-#         },
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'djangui',  # Nom de la base de données
+#         'USER': 'djangui',  # Utilisateur de la base de données
+#         'PASSWORD': 'djangui',  # Mot de passe de l'utilisateur
+#         'HOST': 'localhost',  # L'hôte, ici c'est local
+#         # 'HOST': '54.36.163.57', #'localhost',  # L'hôte, ici c'est local
+#         'PORT': '5432',  # Port par défaut pour PostgreSQL
 #     }
 # }
 
 
-# Password validation
-# https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
+
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {
