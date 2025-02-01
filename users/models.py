@@ -84,62 +84,65 @@ class Compte(models.Model):
         """
         Calcule les virtual_balance et real_balance en fonction des transactions associées.
         """
-        transactions = self.transactions_compte.all()  # Récupère les transactions liées au compte
+        transactions = self.transactions_compte.all()
 
-        # Calcul de virtual_balance
-        virtual_balance = transactions.aggregate(
-            balance=Sum(
+        balances = transactions.aggregate(
+            # Calcul de virtual_balance
+            virtual_balance=Sum(
                 Case(
-                    # Ajouter les transactions de type DEPOSITE et CREDIT avec un statut différent de CANCEL
                     When(
-                        Q(transaction_type__in=["DEPOSITE", "CREDIT"]) &
-                        ~Q(transaction_status="CANCEL"),
+                        Q(transaction_type="DEPOSITE") & ~Q(transaction_status="CANCEL"),
                         then=F("montant")
                     ),
-                    # Soustraire les transactions de type WITHDRAWAL et DEBIT avec un statut différent de CANCEL
                     When(
-                        Q(transaction_type__in=["WITHDRAWAL", "DEBIT"]) &
-                        ~Q(transaction_status="CANCEL"),
+                        Q(transaction_type="CREDIT") & ~Q(transaction_status="CANCEL"),
+                        then=F("montant")
+                    ),
+                    When(
+                        Q(transaction_type="WITHDRAWAL") & ~Q(transaction_status="CANCEL"),
+                        then=-F("montant")
+                    ),
+                    When(
+                        Q(transaction_type="DEBIT") & ~Q(transaction_status="CANCEL"),
+                        then=-F("montant")
+                    ),
+                    output_field=DecimalField()
+                )
+            ),
+
+            # Calcul de real_balance
+            real_balance=Sum(
+                Case(
+                    When(
+                        Q(transaction_type="DEPOSITE") & ~Q(transaction_status="CANCEL"),
+                        then=F("montant")
+                    ),
+                    When(
+                        Q(transaction_type="CREDIT") & Q(transaction_status="SUCCESSFUL"),
+                        then=F("montant")
+                    ),
+                    When(
+                        Q(transaction_type="WITHDRAWAL") & ~Q(transaction_status="CANCEL"),
+                        then=-F("montant")
+                    ),
+                    When(
+                        Q(transaction_type="DEBIT") & Q(transaction_status="SUCCESSFUL"),
                         then=-F("montant")
                     ),
                     output_field=DecimalField()
                 )
             )
-        )['balance'] or 0  # Valeur par défaut si None
+        )
 
-        # Calcul de real_balance
-        real_balance = transactions.aggregate(
-            balance=Sum(
-                Case(
-                    # Ajouter les transactions de type DEPOSITE et CREDIT avec un statut différent de SUCCESSFUL
-                    When(
-                        Q(transaction_type__in=["DEPOSITE", "CREDIT"]) &
-                        ~Q(transaction_status="SUCCESSFUL"),
-                        then=F("montant")
-                    ),
-                    # Soustraire les transactions de type WITHDRAWAL et DEBIT avec un statut différent de SUCCESSFUL
-                    When(
-                        Q(transaction_type__in=["WITHDRAWAL", "DEBIT"]) &
-                        ~Q(transaction_status="SUCCESSFUL"),
-                        then=-F("montant")
-                    ),
-                    output_field=DecimalField()
-                )
-            )
-        )['balance'] or 0  # Valeur par défaut si None
-
-        # Mettre à jour les champs du compte
-        self.virtual_balance = virtual_balance
-        self.real_balance = real_balance
+        # Mettre à jour les soldes en s'assurant qu'ils ne sont pas None
+        self.virtual_balance = balances['virtual_balance'] or 0
+        self.real_balance = balances['real_balance'] or 0
         self.save()
 
-        # Retourner les valeurs calculées
         return {
-            "virtual_balance": virtual_balance,
-            "real_balance": real_balance
+            "virtual_balance": self.virtual_balance,
+            "real_balance": self.real_balance
         }
-
-
 
 
 
