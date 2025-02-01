@@ -142,9 +142,9 @@ class InitRegistrationAPIView(APIView):
                 'code': code,
                 'client': request.data['email']
             }
-            message = render_to_string('confirm_reception_colis.html', ctx)
+            message = render_to_string('mail.html', ctx)
             mail = EmailMessage(
-                "Mot de passe privé",
+                "Création de votre compte LEDJANGUI",
                 message,
                 settings.EMAIL_HOST_USER,
                 [request.data['email']]
