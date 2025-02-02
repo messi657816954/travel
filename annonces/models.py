@@ -6,7 +6,7 @@ from users.models import User, Compte
 
 TRANSPORT_CHOICES = [
         ('AERIEN', 'AERIEN'),
-        ('FEROVIERE', 'FEROVIERE'),
+        ('FERROVIAIRE', 'FERROVIAIRE'),
         ('ROUTIER', 'ROUTIER'),
     ]
 
