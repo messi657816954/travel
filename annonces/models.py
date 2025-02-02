@@ -5,9 +5,9 @@ from commons.models import TimeStampedModel, Ville, TypeBagage
 from users.models import User, Compte
 
 TRANSPORT_CHOICES = [
-        ('AVION', 'AVION'),
-        ('VOITURE', 'VOITURE'),
-        ('TRAIN', 'TRAIN'),
+        ('AERIEN', 'AERIEN'),
+        ('FEROVIERE', 'FEROVIERE'),
+        ('ROUTIER', 'ROUTIER'),
     ]
 
 class Voyage(TimeStampedModel):
