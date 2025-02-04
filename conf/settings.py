@@ -45,9 +45,6 @@ INSTALLED_APPS = [
     'reservations',
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
-    'drf_spectacular',
-    'drf_spectacular_sidecar',  # Pour inclure Swagger UI et ReDoc
-    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -162,8 +159,6 @@ REST_FRAMEWORK = {
         
         'login': '2/day'
     },
-
-    'DEFAULT_SCHEMA_CLASS' : 'drf_spectacular.openapi.AutoSchema',
     
 }
 
