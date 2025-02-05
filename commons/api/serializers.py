@@ -11,7 +11,7 @@ class CurrencySerializer(serializers.ModelSerializer):
 class PaysSerializer(serializers.ModelSerializer):
     class Meta:
         model = Pays
-        fields = ['id', 'intitule', 'code_reference', 'currency']
+        fields = ['id', 'country_code', 'iso_code2', 'iso_code3','label','label_en','currency','digit_code']
 
 class VilleSerializer(serializers.ModelSerializer):
     class Meta:

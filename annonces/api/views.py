@@ -1,6 +1,6 @@
 from django.utils import timezone
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import *
 from rest_framework.response import Response
 from django.db import transaction
 from django.core.mail import EmailMessage
@@ -13,6 +13,7 @@ from annonces.models import Reservation
 from users.utils import reponses, generate_reference
 from .serializers import AnnonceSerializer, VoyageSerializer, TypeBagageSerializer, AnnonceDetailSerializer
 from ..models import Annonce, TypeBagageAnnonce, Voyage
+from django.core.paginator import Paginator
 
 
 
@@ -163,9 +164,9 @@ class UpdateAnnonceAPIView(APIView):
 class PublierAnnonceAPIView(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def post(self, request, annonce_id):
+    def post(self, request):
         try:
-            annonce = Annonce.objects.get(id=annonce_id)
+            annonce = Annonce.objects.get(id=request.query_params['annonce_id'])
             # Mettre à jour le statut de l'annonce'
             annonce.est_publie = True
             annonce.est_actif = True
@@ -216,9 +217,23 @@ class ConfirmerLivraisonAPIView(APIView):
 
 
 class AnnoncesListAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
+
+        annonces = Annonce.objects.filter(createur=request.user)
+        if 'page' in request.query_params:
+            pass
+            paginator = Paginator(annonces, 5)
+            page = request.query_params['page']
+            annonces = paginator.get_page(page)
+            print(annonces)
+            serializer = AnnonceDetailSerializer(annonces, many=True)
+            counts = paginator.num_pages
+
+            print('serializer.data', serializer.data)
+            res = reponses(success=1, results=serializer.data,num_page=counts)
+            return Response(res)
         annonces = Annonce.objects.filter(createur=request.user)
         serializer = AnnonceDetailSerializer(annonces, many=True)
         res = reponses(success=1, results=serializer.data, error_msg='')
@@ -226,17 +241,42 @@ class AnnoncesListAPIView(APIView):
 
 
 
+class AllAnnoncesListAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, *args, **kwargs):
+
+        annonces = Annonce.objects.all()
+        if 'page' in request.query_params:
+            paginator = Paginator(annonces, 5)
+            page = request.query_params['page']
+            annonces = paginator.get_page(page)
+            print(annonces)
+            serializer = AnnonceDetailSerializer(annonces, many=True)
+            counts = paginator.num_pages
+            print('serializer.data', serializer.data)
+            res = reponses(success=1, results=serializer.data,num_page=counts)
+            return Response(res)
+        serializer = AnnonceDetailSerializer(annonces, many=True)
+        res = reponses(success=1, results=serializer.data, error_msg='')
+        return Response(res)
+
+
+
+
+
+
 class AnnonceDetailAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get_object(self, pk):
+    def get_object(self, annonce_id):
         try:
-            return Annonce.objects.get(pk=pk, createur=self.request.user)
+            return Annonce.objects.get(pk=annonce_id, createur=self.request.user)
         except Annonce.DoesNotExist:
             return None
 
-    def get(self, request, pk, *args, **kwargs):
-        annonce = self.get_object(pk)
+    def get(self, request, *args, **kwargs):
+        annonce = self.get_object(request.query_params['annonce_id'])
         if not annonce:
             res = reponses(success=0, error_msg="Reservation introuvable.")
             return Response(res)

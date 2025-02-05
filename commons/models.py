@@ -19,9 +19,17 @@ class Currency(models.Model):
 
 
 class Pays(models.Model):
-    intitule = models.CharField(max_length=100)
-    code_reference = models.CharField(max_length=10)
+    country_code = models.IntegerField()
+    iso_code2 = models.CharField(max_length=2)
+    iso_code3 = models.CharField(max_length=3)
+    label = models.CharField(max_length=100)
+    label_en = models.CharField(max_length=100)
     currency = models.ForeignKey(Currency, on_delete=models.CASCADE, related_name='pays')
+    digit_code = models.IntegerField()
+
+    # intitule = models.CharField(max_length=100)
+    # code_reference = models.CharField(max_length=10)
+    # currency = models.ForeignKey(Currency, on_delete=models.CASCADE, related_name='pays')
 
     class Meta:
         verbose_name = 'Pays'

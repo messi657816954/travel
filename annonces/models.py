@@ -8,7 +8,9 @@ TRANSPORT_CHOICES = [
         ('AERIEN', 'AERIEN'),
         ('FERROVIAIRE', 'FERROVIAIRE'),
         ('ROUTIER', 'ROUTIER'),
+        ('MARITIME', 'MARITIME'),
     ]
+
 
 class Voyage(TimeStampedModel):
     date_depart = models.DateTimeField()
