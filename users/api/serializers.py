@@ -1,3 +1,4 @@
+from commons.models import Pays
 from users.models import User, Compte, MoyenPaiementUser
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -24,6 +25,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
             'username': user.user_name,
             'email': user.email,
             'phone': user.email,
+            'pays': user.pays,
             # Ajoutez d'autres champs de l'utilisateur si nécessaire
         }
         data['compte'] = {
@@ -45,15 +47,16 @@ class RegistrationSerializer(serializers.ModelSerializer):
     # password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
     class Meta:
         model = User
-        fields =  ['email','user_name','phone', 'password', 'otp']
+        fields =  ['email','user_name','phone', 'password', 'otp', 'pays']
         extra_kwargs = {
             'password': {'write_only': True}
         }
     def save(self):
-
+        pays = Pays.objects.get(pk=self.validated_data['phone'])
         user = User(email=self.validated_data['email'],
                     user_name=self.validated_data['user_name'],is_active=True,phone=self.validated_data['phone'])
         user.set_password(self.validated_data['password'],)
+        user.pays=pays
         user.save()
         return user
                     
@@ -80,7 +83,7 @@ class ChangePasswordSerializer(serializers.Serializer):
 class UserDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email', 'user_name', 'phone','is_phone_verify']
+        fields = ['id', 'email', 'user_name', 'phone','is_phone_verify','pays']
 
 
 

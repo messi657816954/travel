@@ -29,7 +29,7 @@ jobs:
             echo "Cloning new version..."
             sudo git clone https://github.com/messi657816954/travel.git /var/www/travel
             echo "New version cloned"
-            echo "Restarting Apache..."
-            sudo -S systemctl restart apache2 <<< 'Guy@vps123'
+            echo "Restarting gunicorn..."
+            sudo -S systemctl restart gunicorn <<< 'Guy@vps123'
             echo "Deployment complete!"
           EOF

@@ -3,7 +3,7 @@ from django.utils import timezone
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.db.models import Sum, Case, When, DecimalField, F, Q
 
-
+from commons.models import Pays
 
 
 class UserManager(BaseUserManager):
@@ -42,6 +42,7 @@ class User(AbstractBaseUser,PermissionsMixin):
     is_phone_verify = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
+    pays = models.ForeignKey(Pays, on_delete=models.CASCADE)
     # is_phone_verify = models.BooleanField(default=False)
 
     REGISTRATION_CHOICES = [

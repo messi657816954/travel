@@ -13,6 +13,7 @@ from users.utils import reponses, generate_reference, generate_password
 from .serializers import ReservationSerializer
 from django.db import transaction
 from annonces.models import Reservation
+from django.core.paginator import Paginator
 
 
 
@@ -134,13 +135,13 @@ class UpdateReserverKilogrammesAPIView(APIView):
             return Response(reponses(success=0, error_msg=str(e)))
 
 
-class ValidateReservationAPIView(APIView):
+class PublishReservationAPIView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @transaction.atomic
-    def post(self, request, reservation_id):
+    def post(self, request):
         try:
-            reservation = Reservation.objects.get(id=reservation_id)
+            reservation = Reservation.objects.get(id=request.query_params['reservation_id'])
             annonce = Annonce.objects.get(id=reservation.annonce.pk)
             # Mettre à jour le statut de la réservation
             reservation.statut = 'VALIDATE'
@@ -183,9 +184,9 @@ class ConfirmReservationByAnnonceurAPIView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @transaction.atomic
-    def post(self, request, reservation_id):
+    def post(self, request):
         try:
-            reservation = Reservation.objects.get(id=reservation_id)
+            reservation = Reservation.objects.get(id=request.query_params['reservation_id'])
             # Mettre à jour le statut de la réservation
             code_reception = generate_password()
             print("-----------code_reception-----: ",code_reception)
@@ -215,9 +216,9 @@ class CancelReservationByAnnonceurAPIView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @transaction.atomic
-    def post(self, request, reservation_id):
+    def post(self, request):
         try:
-            reservation = Reservation.objects.get(id=reservation_id)
+            reservation = Reservation.objects.get(id=request.query_params['reservation_id'])
             annonce = Annonce.objects.get(id=reservation.annonce.pk)
             # Mettre à jour le statut de la réservation
             reservation.statut = 'CANCEL'
@@ -243,12 +244,13 @@ class CancelReservationByAnnonceurAPIView(APIView):
             return Response(reponses(success=0, error_msg=str(e)))
 
 
+
 class CancelReservationByReserveurAPIView(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def post(self, request, reservation_id):
+    def post(self, request):
         try:
-            reservation = Reservation.objects.get(id=reservation_id)
+            reservation = Reservation.objects.get(id=request.query_params['reservation_id'])
             # Mettre à jour le statut de la réservation
             reservation.statut = 'CANCEL'
             reservation.save()
@@ -288,16 +290,15 @@ class LivraisonColisReservationAPIView(APIView):
     def post(self, request):
         try:
             reservation = Reservation.objects.get(id=request.data['reservation_id'])
-            if reservation.code_reception != request.data['code_reception']:
-                return Response(reponses(success=0, error_msg='Le code de livraison du colis ne correspond pas au code de la reservation'))
+            if reservation.code_livraison != request.data['code_livraison']:
+                return Response(reponses(success=0, error_msg='Le code de livraison du colis ne correspond pas au code de livraison de la reservation'))
             # Mettre à jour le statut de la réservation
-            code_livraison = generate_password()
-            print("-----------code_livraison-----: ",code_livraison)
+            print("-----------code_livraison-----: ",reservation.code_livraison)
+            print("-----------request.data['code_livraison']-----: ",request.data['code_livraison'])
             reservation.statut = 'DELIVRATE'
-            reservation.code_livraison = code_livraison
             reservation.save()
 
-            # todo : envoyer le code livraison par email
+            # todo : envoyer le message de livraison livraison par email
             return Response(reponses(success=1, results={'message': 'Reservation annulée avec succès'}))
         except Reservation.DoesNotExist:
             return Response(reponses(success=0, error_msg='Réservation non trouvée'))
@@ -318,14 +319,14 @@ class ReservationsListAPIView(APIView):
 class ReservationDetailAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get_object(self, pk):
+    def get_object(self, reservation_id):
         try:
-            return Reservation.objects.get(pk=pk, user=self.request.user)
+            return Reservation.objects.get(pk=reservation_id, user=self.request.user)
         except Reservation.DoesNotExist:
             return None
 
-    def get(self, request, pk, *args, **kwargs):
-        reserve = self.get_object(pk)
+    def get(self, request, *args, **kwargs):
+        reserve = self.get_object(request.query_params['reservation_id'])
         if not reserve:
             res = reponses(success=0, error_msg="Reservation introuvable.")
             return Response(res)
@@ -351,5 +352,23 @@ class ReservationDetailAPIView(APIView):
         mail.content_subtype = "html"
         mail.send(fail_silently=True)
 
+
+
+class ReservationsListByAnnonceAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        if 'page' in request.query_params or 'annonce_id' in request.query_params:
+            moyens = Reservation.objects.filter(annonce__pk=request.query_params['annonce_id'])
+            paginator = Paginator(moyens, 5)
+            page = request.query_params['page']
+            moyens = paginator.get_page(page)
+            print(moyens)
+            serializer = ReservationSerializer(moyens, many=True)
+            counts = paginator.num_pages
+            print('serializer.data', serializer.data)
+            res = reponses(success=1, results=serializer.data,num_page=counts)
+            return Response(res)
+        return Response(reponses(success=0, error_msg="Spécifiez la page et l'identifiant de l'annonce!"))
 
 

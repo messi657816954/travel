@@ -1,5 +1,5 @@
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import *
 from rest_framework.response import Response
 
 from users.utils import reponses
@@ -10,7 +10,7 @@ from rest_framework import generics,status
 
 
 class CurrencyListCreateAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
         currencies = Currency.objects.all()
@@ -29,7 +29,7 @@ class CurrencyListCreateAPIView(APIView):
 
 
 class CurrencyDetailAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get_object(self, pk):
         try:
@@ -70,7 +70,7 @@ class CurrencyDetailAPIView(APIView):
 
 
 class PaysListCreateAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
         pays = Pays.objects.all()
@@ -89,7 +89,7 @@ class PaysListCreateAPIView(APIView):
 
 
 class PaysDetailAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get_object(self, pk):
         try:
@@ -130,13 +130,17 @@ class PaysDetailAPIView(APIView):
 
 
 class VilleListCreateAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
-        villes = Ville.objects.all()
-        serializer = VilleSerializer(villes, many=True)
-        res = reponses(success=1, results=serializer.data, error_msg='')
-        return Response(res, status=status.HTTP_200_OK)
+        if 'pays_id' in request.query_params:
+            villes = Ville.objects.filter(pays__pk=request.query_params['pays_id'])
+            serializer = VilleSerializer(villes, many=True)
+            print('serializer.data', serializer.data)
+            res = reponses(success=1, results=serializer.data)
+            return Response(res)
+        return Response(reponses(success=0, error_msg="Spécifiez l'identifiant du pays!"))
+
 
     def post(self, request, *args, **kwargs):
         serializer = VilleSerializer(data=request.data)
@@ -149,7 +153,7 @@ class VilleListCreateAPIView(APIView):
 
 
 class VilleDetailAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get_object(self, pk):
         try:
@@ -190,7 +194,7 @@ class VilleDetailAPIView(APIView):
 
 
 class TypeBagageListCreateAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
         types = TypeBagage.objects.all()
