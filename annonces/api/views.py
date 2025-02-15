@@ -15,10 +15,6 @@ from .serializers import AnnonceSerializer, VoyageSerializer, TypeBagageSerializ
 from ..models import Annonce, TypeBagageAnnonce, Voyage
 from django.core.paginator import Paginator
 
-
-
-
-
 class CreateAnnonceAPIView(APIView):
     permission_classes = (IsAuthenticated,)
 
@@ -69,18 +65,18 @@ class CreateAnnonceAPIView(APIView):
                 ))
 
             annonce = annonce_serializer.save()
-            list_id_bagage_auto = list()
-            for rec in request.data['list_bagage']:
-                bagage = TypeBagage.objects.get(pk=rec)
-                list_id_bagage_auto.append(TypeBagageAnnonce(type_bagage=bagage,annonce=annonce))
-
-            TypeBagageAnnonce.objects.bulk_create(list_id_bagage_auto)
-            # 3. Préparer la réponse avec les données combinées
-            list_bagage_auto = TypeBagage.objects.filter(id__in=request.data['list_bagage'])
+            # list_id_bagage_auto = list()
+            # for rec in request.data['list_bagage']:
+            #     bagage = TypeBagage.objects.get(pk=rec)
+            #     list_id_bagage_auto.append(TypeBagageAnnonce(type_bagage=bagage,annonce=annonce))
+            #
+            # TypeBagageAnnonce.objects.bulk_create(list_id_bagage_auto)
+            # # 3. Préparer la réponse avec les données combinées
+            # list_bagage_auto = TypeBagage.objects.filter(id__in=request.data['list_bagage'])
             response_data = {
                 **annonce_serializer.data,
                 # 'voyage': voyage_serializer.data,
-                'bagage_auto': TypeBagageSerializer(list_bagage_auto,many=True).data,
+                #'bagage_auto': TypeBagageSerializer(list_bagage_auto,many=True).data,
             }
 
             return Response(reponses(success=1, results=response_data))
