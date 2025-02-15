@@ -27,7 +27,11 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
             'lastname': user.lastname,
             'email': user.email,
             'phone': user.email,
-            'pays': user.pays,
+            'pays': {
+                'id': user.pays.id,
+                'iso_code3': user.pays.iso_code3,
+                'label': user.pays.label,
+            },
             # Ajoutez d'autres champs de l'utilisateur si nécessaire
         }
         data['compte'] = {
