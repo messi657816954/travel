@@ -16,9 +16,6 @@ from annonces.models import Reservation
 from django.core.paginator import Paginator
 
 
-
-
-
 class ReserverKilogrammesAPIView(APIView):
     permission_classes = (IsAuthenticated,)
 
@@ -57,18 +54,18 @@ class ReserverKilogrammesAPIView(APIView):
 
             reservation = reservation_serializer.save()
 
-            list_id_bagage_auto = list()
-            for rec in request.data['list_bagage']:
-                bagage = TypeBagage.objects.get(pk=rec)
-                list_id_bagage_auto.append(TypeBagageReservation(type_bagage=bagage,reservation=reservation))
-
-            TypeBagageReservation.objects.bulk_create(list_id_bagage_auto)
+            # list_id_bagage_auto = list()
+            # for rec in request.data['list_bagage']:
+            #     bagage = TypeBagage.objects.get(pk=rec)
+            #     list_id_bagage_auto.append(TypeBagageReservation(type_bagage=bagage,reservation=reservation))
+            #
+            # TypeBagageReservation.objects.bulk_create(list_id_bagage_auto)
             # 3. Préparer la réponse avec les données combinées
-            list_bagage_auto = TypeBagage.objects.filter(id__in=request.data['list_bagage'])
+            #list_bagage_auto = TypeBagage.objects.filter(id__in=request.data['list_bagage'])
             response_data = {
                 **reservation_serializer.data,
                 # 'voyage': voyage_serializer.data,
-                'type_bagage': TypeBagageSerializer(list_bagage_auto,many=True).data,
+                #'type_bagage': TypeBagageSerializer(list_bagage_auto,many=True).data,
             }
 
             return Response(reponses(success=1, results=response_data))
@@ -115,17 +112,17 @@ class UpdateReserverKilogrammesAPIView(APIView):
 
             reservation = reservation_serializer.save()
             TypeBagageReservation.objects.filter(reservation=reservation).delete()
-            list_id_bagage_auto = list()
-            for rec in request.data['list_bagage']:
-                bagage = TypeBagage.objects.get(pk=rec)
-                list_id_bagage_auto.append(TypeBagageReservation(type_bagage=bagage,reservation=reservation))
-
-            TypeBagageReservation.objects.bulk_create(list_id_bagage_auto)
-            # 3. Préparer la réponse avec les données combinées
-            list_bagage_auto = TypeBagage.objects.filter(id__in=request.data['list_bagage'])
+            # list_id_bagage_auto = list()
+            # for rec in request.data['list_bagage']:
+            #     bagage = TypeBagage.objects.get(pk=rec)
+            #     list_id_bagage_auto.append(TypeBagageReservation(type_bagage=bagage,reservation=reservation))
+            #
+            # TypeBagageReservation.objects.bulk_create(list_id_bagage_auto)
+            # # 3. Préparer la réponse avec les données combinées
+            # list_bagage_auto = TypeBagage.objects.filter(id__in=request.data['list_bagage'])
             response_data = {
                 **reservation_serializer.data,
-                'bagage_auto': TypeBagageSerializer(list_bagage_auto,many=True).data,
+                #'bagage_auto': TypeBagageSerializer(list_bagage_auto,many=True).data,
             }
 
             return Response(reponses(success=1, results=response_data))

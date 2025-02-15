@@ -137,17 +137,17 @@ class UpdateAnnonceAPIView(APIView):
 
             annonce = annonce_serializer.save()
             TypeBagageAnnonce.objects.filter(annonce=annonce).delete()
-            list_id_bagage_auto = list()
-            for rec in request.data['list_bagage']:
-                bagage = TypeBagage.objects.get(pk=rec)
-                list_id_bagage_auto.append(TypeBagageAnnonce(type_bagage=bagage,annonce=annonce))
-
-            TypeBagageAnnonce.objects.bulk_create(list_id_bagage_auto)
-            # 3. Préparer la réponse avec les données combinées
-            list_bagage_auto = TypeBagage.objects.filter(id__in=request.data['list_bagage'])
+            # list_id_bagage_auto = list()
+            # for rec in request.data['list_bagage']:
+            #     bagage = TypeBagage.objects.get(pk=rec)
+            #     list_id_bagage_auto.append(TypeBagageAnnonce(type_bagage=bagage,annonce=annonce))
+            #
+            # TypeBagageAnnonce.objects.bulk_create(list_id_bagage_auto)
+            # # 3. Préparer la réponse avec les données combinées
+            # list_bagage_auto = TypeBagage.objects.filter(id__in=request.data['list_bagage'])
             response_data = {
                 **annonce_serializer.data,
-                'bagage_auto': TypeBagageSerializer(list_bagage_auto,many=True).data,
+                #'bagage_auto': TypeBagageSerializer(list_bagage_auto,many=True).data,
             }
 
             return Response(reponses(success=1, results=response_data))
