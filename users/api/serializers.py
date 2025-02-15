@@ -54,7 +54,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
             'password': {'write_only': True}
         }
     def save(self):
-        pays = Pays.objects.get(pk=self.validated_data['pays'])
+        pays = self.validated_data['pays']
         user = User(email=self.validated_data['email'],firstname=self.validated_data['firstname'],lastname=self.validated_data['lastname'],
                     user_name=self.validated_data['user_name'],is_active=True,phone=self.validated_data['phone'])
         user.set_password(self.validated_data['password'],)
