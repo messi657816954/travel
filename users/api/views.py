@@ -167,6 +167,8 @@ class PerformRegistrationAPIView(APIView):
         data_query = {
             'email': request.data['email'],
             'user_name': request.data['user_name'],
+            'firstname': request.data['firstname'],
+            'lastname': request.data['lastname'],
             # 'otp': request.data['otp'],
             'password': request.data['password']
         }

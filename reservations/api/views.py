@@ -44,6 +44,7 @@ class ReserverKilogrammesAPIView(APIView):
                 'montant': Decimal(request.data['nombre_kg']) * annonce.montant_par_kg,
                 'nom_personne_a_contacter': request.data['nom_personne_a_contacter'],
                 'telephone_personne_a_contacter': request.data['telephone_personne_a_contacter'],
+                'description': request.data['description'],
                 'statut': 'PENDING',
                 'reference': generate_reference(),
                 'user': request.user.id,
@@ -149,7 +150,7 @@ class PublishReservationAPIView(APIView):
             annonce.nombre_kg_dispo -= int(reservation.nombre_kg)
             annonce.save()
             user_compte = Compte.objects.get(user=request.user)  # Compte de l'utilisateur connecté
-            annonce_compte = Compte.objects.get(user=annonce.createur)  # Compte de l'utilisateur de l'annonce
+            annonce_compte = Compte.objects.get(user=annonce.user_id)  # Compte de l'utilisateur de l'annonce
 
             # Créer les transactions
             from decimal import Decimal  # Pour gérer les montants
@@ -347,7 +348,7 @@ class ReservationDetailAPIView(APIView):
             "Nouvelle réservation",
             message,
             settings.EMAIL_HOST_USER,
-            [annonce.createur.email]
+            [annonce.user_id.email]
         )
         mail.content_subtype = "html"
         mail.send(fail_silently=True)

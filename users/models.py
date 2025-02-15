@@ -36,6 +36,8 @@ class User(AbstractBaseUser,PermissionsMixin):
 
     email = models.EmailField(unique=True)
     user_name = models.CharField(max_length=100, unique=True)
+    firstname = models.CharField(null=True, blank=True)
+    lastname = models.CharField()
     phone = models.CharField(max_length=100, unique=True)
     otp = models.CharField(max_length=10, null=True, blank=True)
     start_date = models.DateTimeField(default=timezone.now)

@@ -23,6 +23,8 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         data['user'] = {
             'id': user.id,
             'username': user.user_name,
+            'firstname': user.firstname,
+            'lastname': user.lastname,
             'email': user.email,
             'phone': user.email,
             'pays': user.pays,
@@ -47,7 +49,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
     # password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
     class Meta:
         model = User
-        fields =  ['email','user_name','phone', 'password', 'otp', 'pays']
+        fields =  ['email','firstname','lastname','user_name','phone', 'password', 'otp', 'pays']
         extra_kwargs = {
             'password': {'write_only': True}
         }
@@ -83,7 +85,7 @@ class ChangePasswordSerializer(serializers.Serializer):
 class UserDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email', 'user_name', 'phone','is_phone_verify','pays']
+        fields = ['id', 'email', 'firstname', 'lastname', 'user_name', 'phone','is_phone_verify','pays']
 
 
 

@@ -32,7 +32,7 @@ class Voyage(TimeStampedModel):
 
 class Annonce(TimeStampedModel):
     date_publication = models.DateTimeField(auto_now_add=True)
-    est_publie = models.BooleanField(default=False)
+    published = models.BooleanField(default=False)
     # type_bagage_auto = models.CharField(max_length=100)
     nombre_kg_dispo = models.IntegerField()
     montant_par_kg = models.DecimalField(max_digits=10, decimal_places=2)
@@ -40,10 +40,10 @@ class Annonce(TimeStampedModel):
     commission = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     revenue_transporteur = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     # statut = models.BooleanField(default=False)
-    est_actif = models.BooleanField(default=True)
+    active = models.BooleanField(default=True)
     reference = models.CharField(max_length=50, unique=True)
     voyage = models.OneToOneField(Voyage, on_delete=models.CASCADE)
-    createur = models.ForeignKey(User, on_delete=models.CASCADE, related_name='annonces')
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name='annonces')
     # type_bagage_auto = models.ForeignKey(TypeBagage, on_delete=models.CASCADE, related_name='annonces_bagage')
 
 
@@ -84,6 +84,7 @@ class Reservation(TimeStampedModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reservations_user')
     annonce = models.ForeignKey(Annonce, on_delete=models.CASCADE, related_name='reservations_annonce')
     # type_bagage = models.ForeignKey(TypeBagage, on_delete=models.CASCADE, related_name='reservations_bagage')
+    description = models.TextField(max_length=300)
 
     statut = models.CharField(
         max_length=100,

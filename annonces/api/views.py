@@ -50,14 +50,14 @@ class CreateAnnonceAPIView(APIView):
             cout_total = montant_par_kg * nombre_kg
 
             annonce_data = {
-                'est_publie': False,
+                'published': False,
                 # 'type_bagage_auto': request.data['type_bagage_auto'],
                 'nombre_kg_dispo': nombre_kg,
                 'montant_par_kg': montant_par_kg,
                 'cout_total': cout_total,
                 'reference': generate_reference(),
                 'voyage': voyage.id,
-                'createur': request.user.id
+                'user_id': request.user.id
             }
 
             annonce_serializer = AnnonceSerializer(data=annonce_data)
@@ -96,10 +96,10 @@ class UpdateAnnonceAPIView(APIView):
     @transaction.atomic
     def put(self, request, *args, **kwargs):
         try:
-            # 1. Créer d'abord le voyage annonce.est_publie = True
-            #             annonce.est_actif = True
+            # 1. Créer d'abord le voyage annonce.published = True
+            #             annonce.active = True
             annonce = Annonce.objects.get(id=request.data['annonce_id'])
-            if annonce.est_publie == True or annonce.est_actif == False:
+            if annonce.published == True or annonce.active == False:
                 return Response(reponses(
                     success=0,
                     error_msg='Annonce dejà publiée ou actif',
@@ -168,8 +168,8 @@ class PublierAnnonceAPIView(APIView):
         try:
             annonce = Annonce.objects.get(id=request.query_params['annonce_id'])
             # Mettre à jour le statut de l'annonce'
-            annonce.est_publie = True
-            annonce.est_actif = True
+            annonce.published = True
+            annonce.active = True
             annonce.date_publication = timezone.now()
             annonce.save()
             return Response(reponses(success=1, results={'message': 'annonce publiée avec succès.'}))
@@ -197,7 +197,7 @@ class ConfirmerLivraisonAPIView(APIView):
             reservation.statut = 'DELIVRATE'
             reservation.save()
             annonce = Annonce.objects.get(id=reservation.annonce.pk)
-            annonce.est_actif = False
+            annonce.active = False
             annonce.save()
             # TODO: apres le paiement il faut mettre à jour le compte de l'annonceur et faire la transaction
 
@@ -221,7 +221,7 @@ class AnnoncesListAPIView(APIView):
 
     def get(self, request, *args, **kwargs):
 
-        annonces = Annonce.objects.filter(createur=request.user)
+        annonces = Annonce.objects.filter(user_id=request.user)
         if 'page' in request.query_params:
             pass
             paginator = Paginator(annonces, 5)
@@ -234,7 +234,7 @@ class AnnoncesListAPIView(APIView):
             print('serializer.data', serializer.data)
             res = reponses(success=1, results=serializer.data,num_page=counts)
             return Response(res)
-        annonces = Annonce.objects.filter(createur=request.user)
+        annonces = Annonce.objects.filter(user_id=request.user)
         serializer = AnnonceDetailSerializer(annonces, many=True)
         res = reponses(success=1, results=serializer.data, error_msg='')
         return Response(res)
@@ -271,7 +271,7 @@ class AnnonceDetailAPIView(APIView):
 
     def get_object(self, annonce_id):
         try:
-            return Annonce.objects.get(pk=annonce_id, createur=self.request.user)
+            return Annonce.objects.get(pk=annonce_id, user_id=self.request.user)
         except Annonce.DoesNotExist:
             return None
 
@@ -307,7 +307,7 @@ class AnnonceDetailAPIView(APIView):
             "Nouvelle réservation",
             message,
             settings.EMAIL_HOST_USER,
-            [annonce.createur.email]
+            [annonce.user_id.email]
         )
         mail.content_subtype = "html"
         mail.send(fail_silently=True)
