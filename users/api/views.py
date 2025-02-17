@@ -14,6 +14,7 @@ from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail, EmailMessage
 from users.utils import *
 from django.conf import settings
+from twilio.rest import Client
 
 from django.template.loader import render_to_string
 from rest_framework import status
@@ -144,7 +145,7 @@ class InitRegistrationAPIView(APIView):
             }
             message = render_to_string('mail.html', ctx)
             mail = EmailMessage(
-                "Création de votre compte LEDJANGUI",
+                "Création de votre compte LEJANGUI",
                 message,
                 settings.EMAIL_HOST_USER,
                 [request.data['email']]
@@ -502,6 +503,12 @@ class InitPhoneOtpAPIView(APIView):
             user[0].otp = code
             user[0].save()
             # todo: envoyer code par sms request.data['phone']
+            client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+            message = client.messages.create(
+                body=f"Your OTP is {code}. Do not share it with anyone.",
+                from_=settings.TWILIO_PHONE_NUMBER,
+                to=user.phone
+            )
 
             res = reponses(success=1, results="Code envoyé par sms avec succès", error_msg='')
             return Response(res)

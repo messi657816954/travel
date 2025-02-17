@@ -26,7 +26,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
             'firstname': user.firstname,
             'lastname': user.lastname,
             'email': user.email,
-            'phone': user.email,
+            'phone': user.phone,
             'pays': {
                 'id': user.pays.id,
                 'iso_code3': user.pays.iso_code3,
