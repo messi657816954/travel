@@ -15,6 +15,7 @@ from django.core.mail import send_mail, EmailMessage
 from users.utils import *
 from django.conf import settings
 from twilio.rest import Client
+from datetime import datetime, timedelta
 
 from django.template.loader import render_to_string
 from rest_framework import status
@@ -501,6 +502,7 @@ class InitPhoneOtpAPIView(APIView):
         user = User.objects.filter(pk=request.user.id)
         if user:
             user[0].otp = code
+            user[0].otp_created_at = datetime.now()
             user[0].save()
             # todo: envoyer code par sms request.data['phone']
             client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
@@ -527,14 +529,17 @@ class PerformOtpAPIView(APIView):
     def post(self, request, *args, **kwargs):
         user = User.objects.filter(pk=request.user.id)
         if user:
-            if user[0].otp == request.data['otp']:
-                user[0].is_phone_verify = True
-                user[0].save()
-                res = reponses(success=1, results="Otp a été effectué avec succès".encode('utf8'),error_msg='')
-                return Response(res)
-            res = reponses(success=0, error_msg="Le code ne correspond pas")
-            return Response(res)
-        res = reponses(success=0, error_msg="Pas d'utilisateur correspondant à cet email")
+            if datetime.now() - user[0].otp_created_at > timedelta(minutes=5):
+                res = reponses(success=0, error_msg="Le code a expiré")
+            else:
+                if user[0].otp == request.data['otp']:
+                    user[0].is_phone_verify = True
+                    user[0].save()
+                    res = reponses(success=1, results="Otp a été effectué avec succès".encode('utf8'),error_msg='')
+                else:
+                    res = reponses(success=0, error_msg="Le code ne correspond pas")
+        else:
+            res = reponses(success=0, error_msg="Pas d'utilisateur correspondant à cet email")
         return Response(res)
 
 

@@ -40,6 +40,7 @@ class User(AbstractBaseUser,PermissionsMixin):
     lastname = models.CharField(max_length=100)
     phone = models.CharField(max_length=100, unique=True)
     otp = models.CharField(max_length=10, null=True, blank=True)
+    otp_created_at = models.DateTimeField(null=True)
     start_date = models.DateTimeField(default=timezone.now)
     is_phone_verify = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
