@@ -509,7 +509,7 @@ class InitPhoneOtpAPIView(APIView):
             message = client.messages.create(
                 body=f"Your OTP is {code}. Do not share it with anyone.",
                 from_=settings.TWILIO_PHONE_NUMBER,
-                to=user.phone
+                to=user[0].phone
             )
 
             res = reponses(success=1, results="Code envoyé par sms avec succès", error_msg='')
