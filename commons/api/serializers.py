@@ -17,7 +17,7 @@ class VilleSerializer(serializers.ModelSerializer):
     pays_details = PaysSerializer(source='pays', read_only=True)
     class Meta:
         model = Ville
-        fields = ['id', 'intitule', 'code_reference', 'pays']
+        fields = ['id', 'intitule', 'code_reference', 'pays_details', 'pays']
 
 class TypeBagageSerializer(serializers.ModelSerializer):
     class Meta:

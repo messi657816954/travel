@@ -18,7 +18,7 @@ class VoyageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Voyage
         fields = [
-            'id', 'date_depart', 'provenance', 'destination',
+            'id', 'date_depart', 'provenance', 'departure_details', 'destination', 'destination_details',
             'agence_voyage', 'code_reservation','moyen_transport'
         ]
         extra_kwargs = {
