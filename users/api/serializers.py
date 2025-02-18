@@ -56,7 +56,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
     pays_details = PaysSerializer(source='pays', read_only=True)
     class Meta:
         model = User
-        fields =  ['email','firstname','lastname','username','phone', 'password', 'otp', 'pays_details', 'pays']
+        fields =  ['email','firstname','lastname','username', 'user_nam','phone', 'password', 'otp', 'pays_details', 'pays']
         extra_kwargs = {
             'password': {'write_only': True}
         }
