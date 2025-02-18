@@ -57,6 +57,7 @@ class CreateAnnonceAPIView(APIView):
             }
 
             annonce_serializer = AnnonceSerializer(data=annonce_data)
+            print("############### :", annonce_data)
             if not annonce_serializer.is_valid():
                 print("====== :",annonce_serializer.errors)
                 return Response(reponses(
