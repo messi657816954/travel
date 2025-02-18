@@ -14,7 +14,7 @@ class PaysSerializer(serializers.ModelSerializer):
         fields = ['id', 'country_code', 'iso_code2', 'iso_code3','label','label_en','currency','digit_code']
 
 class VilleSerializer(serializers.ModelSerializer):
-    pays_details = VoyageSerializer(source='pays', read_only=True)
+    pays_details = PaysSerializer(source='pays', read_only=True)
     class Meta:
         model = Ville
         fields = ['id', 'intitule', 'code_reference', 'pays']
