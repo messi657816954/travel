@@ -2,6 +2,7 @@ from commons.models import Pays
 from users.models import User, Compte, MoyenPaiementUser
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from commons.api.serializers import PaysSerializer
 
 
 
@@ -51,9 +52,11 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class RegistrationSerializer(serializers.ModelSerializer):
     # password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
+    username = serializers.CharField(source="user_name", read_only=True)
+    pays_details = PaysSerializer(source='pays', read_only=True)
     class Meta:
         model = User
-        fields =  ['email','firstname','lastname','user_name','phone', 'password', 'otp', 'pays']
+        fields =  ['email','firstname','lastname','username','phone', 'password', 'otp', 'pays_details', 'pays']
         extra_kwargs = {
             'password': {'write_only': True}
         }
