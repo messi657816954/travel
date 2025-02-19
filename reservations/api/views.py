@@ -22,6 +22,8 @@ class ReserverKilogrammesAPIView(APIView):
     def post(self, request):
         try:
             annonce = Annonce.objects.get(id=request.data['annonce_id'])
+            if annonce.user_id.id == request.user.id:
+                return Response(reponses(success=0, error_msg='Vous ne pouvez pas faire de réservation sur une annonce que vous avez publié'))
             if annonce.nombre_kg_dispo < int(request.data['nombre_kg']):
                 return Response(reponses(success=0, error_msg='Kilogrammes demandés non disponibles'))
 
