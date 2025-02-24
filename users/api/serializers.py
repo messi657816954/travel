@@ -3,8 +3,6 @@ from users.models import User, Compte, MoyenPaiementUser
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from commons.api.serializers import PaysSerializer
-from commons.models import Currency
-
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -22,7 +20,6 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         user = self.user
         cpte = Compte.objects.get(user=user)
         moyens = MoyenPaiementUser.objects.filter(user=user)
-        currency = Currency.objects.filter(id=user.pays.currency.id)
         data['user'] = {
             'id': user.id,
             'user_name': user.user_name,
@@ -37,7 +34,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
                 'iso_code3': user.pays.iso_code3,
                 'label': user.pays.label,
                 'label_en': user.pays.label_en,
-                'currency': currency[0].id,
+                'currency': Null,
                 'digit_code': user.pays.digit_code
             },
             # Ajoutez d'autres champs de l'utilisateur si nécessaire
