@@ -22,7 +22,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         user = self.user
         cpte = Compte.objects.get(user=user)
         moyens = MoyenPaiementUser.objects.filter(user=user)
-        currency = Currency.objects.filter(id=user.pays.currency__pk)
+        currency = Currency.objects.filter(id=user.pays.currency.id)
         data['user'] = {
             'id': user.id,
             'user_name': user.user_name,
