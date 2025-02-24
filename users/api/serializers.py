@@ -30,8 +30,13 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
             'phone': user.phone,
             'pays': {
                 'id': user.pays.id,
+                'country_code': user.pays.country_code,
+                'iso_code2': user.pays.iso_code2,
                 'iso_code3': user.pays.iso_code3,
                 'label': user.pays.label,
+                'label_en': user.pays.label_en,
+                'currency': user.pays.currency.id,
+                'digit_code': user.pays.digit_code
             },
             # Ajoutez d'autres champs de l'utilisateur si nécessaire
         }
