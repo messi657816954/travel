@@ -20,6 +20,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         user = self.user
         cpte = Compte.objects.get(user=user)
         moyens = MoyenPaiementUser.objects.filter(user=user)
+        pays = Pays.objects.filter(id=user.pays.id)
         data['user'] = {
             'id': user.id,
             'user_name': user.user_name,
@@ -27,16 +28,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
             'lastname': user.lastname,
             'email': user.email,
             'phone': user.phone,
-            'pays': {
-                'id': user.pays.id,
-                'country_code': user.pays.country_code,
-                'iso_code2': user.pays.iso_code2,
-                'iso_code3': user.pays.iso_code3,
-                'label': user.pays.label,
-                'label_en': user.pays.label_en,
-                'currency': 0,
-                'digit_code': user.pays.digit_code
-            },
+            'pays': PaysSerializer(pays, many=True).data,
             # Ajoutez d'autres champs de l'utilisateur si nécessaire
         }
         data['compte'] = {
