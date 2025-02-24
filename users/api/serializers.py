@@ -23,7 +23,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         moyens = MoyenPaiementUser.objects.filter(user=user)
         data['user'] = {
             'id': user.id,
-            'username': user.user_name,
+            'user_name': user.user_name,
             'firstname': user.firstname,
             'lastname': user.lastname,
             'email': user.email,
@@ -52,11 +52,10 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class RegistrationSerializer(serializers.ModelSerializer):
     # password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
-    username = serializers.CharField(source="user_name", read_only=True)
     pays_details = PaysSerializer(source='pays', read_only=True)
     class Meta:
         model = User
-        fields =  ['email','firstname','lastname','username', 'user_name','phone', 'password', 'otp', 'pays_details', 'pays']
+        fields =  ['email','firstname','lastname', 'user_name','phone', 'password', 'otp', 'pays_details', 'pays']
         extra_kwargs = {
             'password': {'write_only': True}
         }
