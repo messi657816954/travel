@@ -35,7 +35,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
                 'iso_code3': user.pays.iso_code3,
                 'label': user.pays.label,
                 'label_en': user.pays.label_en,
-                'currency': user.pays.currency.id,
+                'currency': user.pays.currency,
                 'digit_code': user.pays.digit_code
             },
             # Ajoutez d'autres champs de l'utilisateur si nécessaire
