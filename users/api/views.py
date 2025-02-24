@@ -77,8 +77,8 @@ class RegistrationAPIView(generics.GenericAPIView):
             compte_serializer = CompteSerializer(cpte)
             data['response'] = "Registration Successful!"
             refresh = RefreshToken.for_user(user=user)
-            data['refresh'] = str(refresh)
-            data['access'] = str(refresh.access_token)
+            data['refresh_token'] = str(refresh)
+            data['access_token'] = str(refresh.access_token)
             data['account'] = compte_serializer.data
             data['user'] = self.get_serializer(user).data
             data['user_payment_method'] = payment_method.data
