@@ -73,7 +73,7 @@ class PaysListCreateAPIView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
-        pays = Pays.objects.all()
+        pays = Pays.objects.filter(active=True).order_by("label")
         serializer = PaysSerializer(pays, many=True)
         res = reponses(success=1, results=serializer.data, error_msg='')
         return Response(res, status=status.HTTP_200_OK)
