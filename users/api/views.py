@@ -16,6 +16,7 @@ from users.utils import *
 from django.conf import settings
 from twilio.rest import Client
 from datetime import datetime, timedelta
+from django.utils import timezone
 
 from django.template.loader import render_to_string
 from rest_framework import status
@@ -23,7 +24,14 @@ from rest_framework.response import Response
 
 from django.db import transaction
 
+import environ
 
+env = environ.Env()
+environ.Env.read_env()  # Read .env file
+
+ACCOUNT_SID = env('TWILIO_ACCOUNT_SID', default='AC2bb830ebf39487cae5db6c5af2ed8b0f')
+AUTH_TOKEN = env('TWILIO_AUTH_TOKEN', default='e2d9dfbafac110a43096310ce9b99675')
+PHONE_NUMBER = env('TWILIO_PHONE_NUMBER', default='0000')
 
 
 class MyTokenObtainPairView(TokenObtainPairView):
@@ -505,10 +513,10 @@ class InitPhoneOtpAPIView(APIView):
             user[0].otp_created_at = datetime.now()
             user[0].save()
             # todo: envoyer code par sms request.data['phone']
-            client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+            client = Client(ACCOUNT_SID, AUTH_TOKEN)
             message = client.messages.create(
                 body=f"Your OTP is {code}. Do not share it with anyone.",
-                from_=settings.TWILIO_PHONE_NUMBER,
+                from_=PHONE_NUMBER,
                 to=user[0].phone
             )
 
@@ -529,7 +537,7 @@ class PerformOtpAPIView(APIView):
     def post(self, request, *args, **kwargs):
         user = User.objects.filter(pk=request.user.id)
         if user:
-            if datetime.now() - user[0].otp_created_at > timedelta(minutes=5):
+            if timezone.now() - user[0].otp_created_at > timedelta(minutes=5):
                 res = reponses(success=0, error_msg="Le code a expiré")
             else:
                 if user[0].otp == request.data['otp']:
