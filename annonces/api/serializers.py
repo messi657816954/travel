@@ -92,3 +92,8 @@ class AvisUserSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Vous avez déjà donné un avis pour cette annonce.")
 
         return data
+
+
+    def create(self, validated_data):
+        validated_data['utilisateur_auteur'] = self.context['request'].user
+        return super().create(validated_data)

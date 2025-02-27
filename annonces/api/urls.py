@@ -21,11 +21,8 @@ urlpatterns = [
     path('search/', AnnonceSearchAPIView.as_view(), name='search'),
 
     # POST endpoint to create a new avis
-    path('donner/', DonnerAvisAPIView.as_view(), name='donner_avis'),
-
-    # GET endpoint to list avis received by the authenticated user
-    path('recus/', ListerAvisRecusAPIView.as_view(), name='lister_avis_recus'),
+    path('avis/donner/', DonnerAvisAPIView.as_view(), name='donner_avis'),
 
     # GET endpoint to see avis for a specific user
-    path('utilisateur/', VoirAvisUtilisateurAPIView.as_view(), name='voir_avis_utilisateur')
+    path('avis/utilisateur/', VoirAvisUtilisateurAPIView.as_view(), name='voir_avis_utilisateur')
 ]

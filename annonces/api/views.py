@@ -338,7 +338,7 @@ class AnnonceSearchAPIView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
-        queryset = Annonce.objects.filter(active=True)
+        queryset = Annonce.objects.all()
 
         # 🔹 Filtrage par date de départ (optionnel)
         date_depart = request.query_params.get('date_depart', None)
@@ -364,12 +364,14 @@ class AnnonceSearchAPIView(APIView):
         pays_prov_dest = list(Pays.objects.filter(villes__in=villes_prov_dest).distinct())
 
         # 🔹 Ajout des annonces liées aux villes ET aux pays trouvés
-        queryset = queryset.filter(
-            Q(voyage__provenance__in=villes_prov_dest) &
-            Q(voyage__destination__in=villes_prov_dest) &
-            Q(voyage__provenance__pays__in=pays_prov_dest) &
-            Q(voyage__destination__pays__in=pays_prov_dest)
-        ).distinct()
+        if provenance and destination:
+            queryset = queryset.filter(
+                Q(voyage__provenance__in=villes_prov_dest) &
+                Q(voyage__destination__in=villes_prov_dest) &
+                Q(voyage__provenance__pays__in=pays_prov_dest) &
+                Q(voyage__destination__pays__in=pays_prov_dest)
+            ).distinct()
+
 
         # 🔹 Filtrage par poids (min_kg ET max_kg doivent être respectés)
         min_kg = request.query_params.get('min_kg', None)
@@ -398,12 +400,17 @@ class DonnerAvisAPIView(generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         data = request.data.copy()
+        query_data = request.query_params.copy()
         data["utilisateur_auteur"] = request.user.id  # L'utilisateur connecté donne l'avis
 
         # Validate that either annonce or reservation is provided, not both
-        if ('annonce' in data and 'reservation' in data) or ('annonce' not in data and 'reservation' not in data):
+        if ('annonce' in query_data and 'reservation' in query_data) or ('annonce' not in query_data and 'reservation' not in query_data):
             res = reponses(success=0, results={}, error_msg="Un avis doit être lié soit à une réservation, soit à une annonce, mais pas les deux.")
             return Response(res, status=status.HTTP_400_BAD_REQUEST)
+
+        print(f"Utilisateur authentifié: {request.user.id}")
+        data["annonce"] = query_data.get("annonce",None)
+        data["reservation"] = query_data.get("reservation",None)
 
         serializer = self.get_serializer(data=data, context={'request': request})
         if serializer.is_valid():
