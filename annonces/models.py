@@ -1,4 +1,4 @@
-
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from commons.models import TimeStampedModel, Ville, TypeBagage
@@ -172,3 +172,58 @@ class Transaction(TimeStampedModel):
     class Meta:
         verbose_name = 'Transaction'
         verbose_name_plural = 'Transactions'
+
+
+
+
+class AvisUser(models.Model):
+    NOTE_CHOICES = [(i, str(i)) for i in range(1, 6)]
+
+    note = models.IntegerField(choices=NOTE_CHOICES)
+    commentaire = models.TextField(blank=True, null=True)
+    date_creation = models.DateTimeField(auto_now_add=True)
+    utilisateur_auteur = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="avis_donnes"
+    )
+    utilisateur_note = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="avis_recus"
+    )
+    reservation = models.ForeignKey(
+        Reservation, on_delete=models.CASCADE, related_name="avis_reservations",
+        blank=True, null=True
+    )
+    annonce = models.ForeignKey(
+        Annonce, on_delete=models.CASCADE, related_name="avis_annonces",
+        blank=True, null=True
+    )
+
+    class Meta:
+        # Ensure we can't have duplicates for the same author/user combination on a reservation
+        # or duplicates for the same author/user combination on an announcement
+        constraints = [
+            models.CheckConstraint(
+                check=(
+                    models.Q(reservation__isnull=False, annonce__isnull=True) |
+                    models.Q(reservation__isnull=True, annonce__isnull=False)
+                ),
+                name='one_relation_only'
+            ),
+            models.UniqueConstraint(
+                fields=['utilisateur_auteur', 'utilisateur_note', 'reservation'],
+                name='unique_avis_reservation',
+                condition=models.Q(reservation__isnull=False)
+            ),
+            models.UniqueConstraint(
+                fields=['utilisateur_auteur', 'utilisateur_note', 'annonce'],
+                name='unique_avis_annonce',
+                condition=models.Q(annonce__isnull=False)
+            )
+        ]
+
+
+    def save(self, *args, **kwargs):
+        # Ensure we have exactly one relation - either reservation or annonce, not both
+        if (self.reservation is None and self.annonce is None) or (self.reservation is not None and self.annonce is not None):
+            raise ValidationError("Un avis doit être lié soit à une réservation, soit à une annonce, mais pas les deux.")
+        super().save(*args, **kwargs)
+

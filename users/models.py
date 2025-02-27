@@ -46,7 +46,12 @@ class User(AbstractBaseUser,PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
     pays = models.ForeignKey(Pays, on_delete=models.CASCADE)
+
+    zip_code = models.CharField(max_length=100, null=True,blank=True)
+    address = models.CharField(max_length=100, null=True,blank=True)
+    city = models.CharField(max_length=100, null=True,blank=True)
     # is_phone_verify = models.BooleanField(default=False)
+
 
     REGISTRATION_CHOICES = [
         ('email', 'Email'),
@@ -65,6 +70,39 @@ class User(AbstractBaseUser,PermissionsMixin):
     
     def __str__(self):
         return self.user_name
+
+    def moyenne_notes_recues(self, type_avis=None):
+        """
+        Calcule la moyenne des notes reçues par l'utilisateur.
+
+        Args:
+            type_avis (str, optional): Type d'avis à filtrer ('annonce' ou 'reservation').
+                                       Si None, tous les avis sont pris en compte.
+
+        Returns:
+            float: La moyenne des notes, ou 0 si aucun avis.
+        """
+        from django.db.models import Avg
+
+        # Requête de base pour tous les avis reçus par l'utilisateur
+        query = self.avis_recus
+
+        # Filtrage optionnel par type d'avis
+        if type_avis == 'annonce':
+            query = query.filter(annonce__isnull=False)
+        elif type_avis == 'reservation':
+            query = query.filter(reservation__isnull=False)
+
+        # Calcul de la moyenne
+        moyenne = query.aggregate(Avg('note'))
+
+        # Retourne la moyenne ou 0 si aucun avis
+        return moyenne['note__avg'] or 0
+
+
+
+
+
 
 
 class MoyenPaiementUser(models.Model):

@@ -102,6 +102,11 @@ class MoyenPaiementSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+
+
+
+
+
 # class CustomTokenRefreshViewSerializer(TokenRefreshView):
 #     def validate(self, attrs):
 #         # The default result (access/refresh tokens)

@@ -1,4 +1,6 @@
 from django.utils import timezone
+from rest_framework import generics, status
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView
 from rest_framework.permissions import *
 from rest_framework.response import Response
@@ -8,12 +10,15 @@ from django.template.loader import render_to_string
 from django.conf import settings
 from decimal import Decimal
 
-from commons.models import TypeBagage
-from annonces.models import Reservation
+from commons.models import TypeBagage, Pays, Ville
+from annonces.models import Reservation, AvisUser
 from users.utils import reponses, generate_reference
-from .serializers import AnnonceSerializer, VoyageSerializer, TypeBagageSerializer, AnnonceDetailSerializer
+from .serializers import AnnonceSerializer, VoyageSerializer, TypeBagageSerializer, AnnonceDetailSerializer, \
+    AvisUserSerializer
 from ..models import Annonce, TypeBagageAnnonce, Voyage
 from django.core.paginator import Paginator
+
+
 
 class CreateAnnonceAPIView(APIView):
     permission_classes = (IsAuthenticated,)
@@ -320,3 +325,176 @@ async def send_email_async(subject, message, recipient_email):
     )
     mail.content_subtype = "html"
     mail.send(fail_silently=True)
+
+
+
+
+
+from datetime import datetime
+from django.db.models import Q, Avg
+
+
+class AnnonceSearchAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        queryset = Annonce.objects.filter(active=True)
+
+        # 🔹 Filtrage par date de départ (optionnel)
+        date_depart = request.query_params.get('date_depart', None)
+        if date_depart:
+            try:
+                date_obj = datetime.strptime(date_depart, "%Y-%m-%d")
+                queryset = queryset.filter(voyage__date_depart__date=date_obj)
+            except ValueError:
+                return Response({"error": "Format de date invalide. Utilise YYYY-MM-DD"}, status=400)
+
+        # 🔹 Recherche par autocomplétion sur provenance ET destination
+        provenance = request.query_params.get('provenance', None)
+        destination = request.query_params.get('destination', None)
+
+        villes_prov_dest = []
+
+        if provenance and destination:
+            villes_prov_dest = list(Ville.objects.filter(
+                Q(intitule__icontains=provenance) | Q(intitule__icontains=destination)
+            ).order_by('-id')[:5])
+
+        # 🔹 Récupération des pays liés aux villes trouvées
+        pays_prov_dest = list(Pays.objects.filter(villes__in=villes_prov_dest).distinct())
+
+        # 🔹 Ajout des annonces liées aux villes ET aux pays trouvés
+        queryset = queryset.filter(
+            Q(voyage__provenance__in=villes_prov_dest) &
+            Q(voyage__destination__in=villes_prov_dest) &
+            Q(voyage__provenance__pays__in=pays_prov_dest) &
+            Q(voyage__destination__pays__in=pays_prov_dest)
+        ).distinct()
+
+        # 🔹 Filtrage par poids (min_kg ET max_kg doivent être respectés)
+        min_kg = request.query_params.get('min_kg', None)
+        max_kg = request.query_params.get('max_kg', None)
+
+        if min_kg and max_kg:
+            queryset = queryset.filter(nombre_kg_dispo__gte=int(min_kg), nombre_kg_dispo__lte=int(max_kg))
+
+        # 🔹 Pagination (5 annonces par page)
+        page = request.query_params.get('page', 1)
+        paginator = Paginator(queryset, 5)
+        annonces_page = paginator.get_page(page)
+
+        serializer = AnnonceDetailSerializer(annonces_page, many=True)
+        return Response({
+            "success": 1,
+            "results": serializer.data,
+            "num_page": paginator.num_pages
+        })
+
+
+
+class DonnerAvisAPIView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AvisUserSerializer
+
+    def post(self, request, *args, **kwargs):
+        data = request.data.copy()
+        data["utilisateur_auteur"] = request.user.id  # L'utilisateur connecté donne l'avis
+
+        # Validate that either annonce or reservation is provided, not both
+        if ('annonce' in data and 'reservation' in data) or ('annonce' not in data and 'reservation' not in data):
+            res = reponses(success=0, results={}, error_msg="Un avis doit être lié soit à une réservation, soit à une annonce, mais pas les deux.")
+            return Response(res, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = self.get_serializer(data=data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            res = reponses(success=1, results=serializer.data, error_msg="")
+            return Response(res, status=status.HTTP_201_CREATED)
+
+        res = reponses(success=0, results={}, error_msg=serializer.errors)
+        return Response(res, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+class ListerAvisRecusAPIView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AvisUserSerializer
+    pagination_class = PageNumberPagination  # Optional: Add pagination
+
+    def get_queryset(self):
+        """ Filtrage selon des query parameters """
+        queryset = AvisUser.objects.filter(utilisateur_note=self.request.user).order_by('-date_creation')
+
+        # Filtre par date
+        date = self.request.query_params.get('date', None)
+        if date:
+            queryset = queryset.filter(date_creation__date=date)
+
+        # Filtre par type (annonce ou reservation)
+        type_avis = self.request.query_params.get('type', None)
+        if type_avis == 'annonce':
+            queryset = queryset.filter(annonce__isnull=False)
+        elif type_avis == 'reservation':
+            queryset = queryset.filter(reservation__isnull=False)
+
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            paginated_data = self.get_paginated_response(serializer.data).data
+            res = reponses(success=1, results=paginated_data, error_msg="")
+            return Response(res)
+
+        serializer = self.get_serializer(queryset, many=True)
+        res = reponses(success=1, results=serializer.data, error_msg="")
+        return Response(res)
+
+
+
+class VoirAvisUtilisateurAPIView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AvisUserSerializer
+    pagination_class = PageNumberPagination  # Optional: Add pagination
+
+    def get_queryset(self):
+        """ Retourne les avis donnés à un utilisateur spécifique """
+        utilisateur_id = self.request.query_params.get('utilisateur_id', None)
+        if not utilisateur_id:
+            return AvisUser.objects.none()
+
+        queryset = AvisUser.objects.filter(utilisateur_note=utilisateur_id).order_by('-date_creation')
+
+        # Filtre par type (annonce ou reservation)
+        type_avis = self.request.query_params.get('type', None)
+        if type_avis == 'annonce':
+            queryset = queryset.filter(annonce__isnull=False)
+        elif type_avis == 'reservation':
+            queryset = queryset.filter(reservation__isnull=False)
+
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            paginated_data = self.get_paginated_response(serializer.data).data
+            res = reponses(success=1, results=paginated_data, error_msg="")
+            return Response(res)
+
+        serializer = self.get_serializer(queryset, many=True)
+        res = reponses(success=1, results=serializer.data, error_msg="")
+        return Response(res)
+
+
+
+
+
+
+

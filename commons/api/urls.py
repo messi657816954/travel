@@ -3,7 +3,7 @@ from .views import (
     CurrencyListCreateAPIView, CurrencyDetailAPIView,
     PaysListCreateAPIView, PaysDetailAPIView,
     VilleListCreateAPIView, VilleDetailAPIView,
-    TypeBagageListCreateAPIView, TypeBagageDetailAPIView
+    TypeBagageListCreateAPIView, TypeBagageDetailAPIView, VilleAutocompleteAPIView
 )
 
 urlpatterns = [
@@ -22,4 +22,7 @@ urlpatterns = [
     # URLs pour TypeBagage
     path('type-bagages/', TypeBagageListCreateAPIView.as_view(), name='type-bagage-list-create'),
     path('type-bagages/<int:pk>/', TypeBagageDetailAPIView.as_view(), name='type-bagage-detail'),
+
+
+    path('ville/autocomplete', VilleAutocompleteAPIView.as_view(), name='ville-auto-complete'),
 ]

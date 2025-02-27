@@ -1,3 +1,6 @@
+from django.db.models import Avg
+from rest_framework.generics import UpdateAPIView, DestroyAPIView
+
 from annonces.models import Reservation
 from .serializers import RegistrationSerializer, VerifyOTPSerializer, MyTokenObtainPairSerializer, \
     ChangePasswordSerializer, UserDetailSerializer, CompteSerializer, MoyenPaiementSerializer
@@ -22,6 +25,7 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from django.db import transaction
+
 
 
 
@@ -159,45 +163,45 @@ class InitRegistrationAPIView(APIView):
 
 
 
-class PerformRegistrationAPIView(APIView):
-    permission_classes = (AllowAny,)
-    serializer_class = RegistrationSerializer
-
-    @transaction.atomic
-    def post(self, request, *args, **kwargs):
-        print("--------1----data : ",request.data)
-        data_query = {
-            'email': request.data['email'],
-            'user_name': request.data['user_name'],
-            'firstname': request.data['firstname'],
-            'lastname': request.data['lastname'],
-            # 'otp': request.data['otp'],
-            'password': request.data['password']
-        }
-        serializer = RegistrationSerializer(data=data_query)
-        if serializer.is_valid(raise_exception=True):
-            print("-------2-----data : ",request.data)
-            user = serializer.save()
-            cpte = Compte.objects.create(
-                virtual_balance=0,
-                real_balance=0,
-                incoming_amount=0,
-                user=user  # Utilisation de l'instance utilisateur
-            )
-            compte_serializer = CompteSerializer(cpte)
-
-            # Préparation des données de réponse
-            refresh = RefreshToken.for_user(user=user)
-            response_data = {
-                **serializer.data,  # Données de l'utilisateur
-                'access': str(refresh.access_token),  # Données du compte
-                'refresh': str(refresh),  # Données du compte
-                # 'compte': compte_serializer.data  # Données du compte
-            }
-            res = reponses(success=1, results=data_query, error_msg='')
-            return Response(res)
-        res = reponses(success=0, error_msg=serializer.errors)
-        return Response(res)
+# class PerformRegistrationAPIView(APIView):
+#     permission_classes = (AllowAny,)
+#     serializer_class = RegistrationSerializer
+#
+#     @transaction.atomic
+#     def post(self, request, *args, **kwargs):
+#         print("--------1----data : ",request.data)
+#         data_query = {
+#             'email': request.data['email'],
+#             'user_name': request.data['user_name'],
+#             'firstname': request.data['firstname'],
+#             'lastname': request.data['lastname'],
+#             # 'otp': request.data['otp'],
+#             'password': request.data['password']
+#         }
+#         serializer = RegistrationSerializer(data=data_query)
+#         if serializer.is_valid(raise_exception=True):
+#             print("-------2-----data : ",request.data)
+#             user = serializer.save()
+#             cpte = Compte.objects.create(
+#                 virtual_balance=0,
+#                 real_balance=0,
+#                 incoming_amount=0,
+#                 user=user  # Utilisation de l'instance utilisateur
+#             )
+#             compte_serializer = CompteSerializer(cpte)
+#
+#             # Préparation des données de réponse
+#             refresh = RefreshToken.for_user(user=user)
+#             response_data = {
+#                 **serializer.data,  # Données de l'utilisateur
+#                 'access': str(refresh.access_token),  # Données du compte
+#                 'refresh': str(refresh),  # Données du compte
+#                 # 'compte': compte_serializer.data  # Données du compte
+#             }
+#             res = reponses(success=1, results=data_query, error_msg='')
+#             return Response(res)
+#         res = reponses(success=0, error_msg=serializer.errors)
+#         return Response(res)
 
 
 
@@ -541,7 +545,6 @@ class PerformOtpAPIView(APIView):
         else:
             res = reponses(success=0, error_msg="Pas d'utilisateur correspondant à cet email")
         return Response(res)
-
 
 
 

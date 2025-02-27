@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import RegistrationAPIView, VerifyOTPAPIView, LogoutBlacklistTokenUpdateView, MyTokenObtainPairView, \
-    UserDetailClientView, InitRegistrationAPIView, PerformRegistrationAPIView, InitForgotPasswordAPIView, \
+    UserDetailClientView, InitRegistrationAPIView, InitForgotPasswordAPIView, \
     ChangePasswordView, PerformForgotPasswordAPIView, MoyenPaiementListCreateAPIView, MoyenPaiementDetailAPIView, \
     InitierPaiementAPIView, PerformOtpAPIView, InitPhoneOtpAPIView
 

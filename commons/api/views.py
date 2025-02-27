@@ -1,3 +1,4 @@
+from django.core.paginator import Paginator
 from rest_framework.views import APIView
 from rest_framework.permissions import *
 from rest_framework.response import Response
@@ -251,3 +252,30 @@ class TypeBagageDetailAPIView(APIView):
         type_bagage.delete()
         res = reponses(success=1, results="Type de bagage supprimé avec succès.", error_msg='')
         return Response(res, status=status.HTTP_204_NO_CONTENT)
+
+
+
+class VilleAutocompleteAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        query = request.query_params.get('query', '').strip()
+        page = request.query_params.get('page', 1)
+        per_page = request.query_params.get('per_page', 5)  # Nombre d'éléments par page
+
+        # 🔹 Filtrage par autocomplétion et tri alphabétique
+        villes = Ville.objects.filter(intitule__icontains=query).order_by('intitule')
+
+        # 🔹 Pagination
+        paginator = Paginator(villes, per_page)
+        villes_page = paginator.get_page(page)
+
+        # 🔹 Sérialisation des résultats
+        serializer = VilleSerializer(villes_page, many=True)
+
+        return Response({
+            "success": 1,
+            "results": serializer.data,
+            "num_pages": paginator.num_pages,
+            "current_page": villes_page.number
+        })
