@@ -248,7 +248,7 @@ class AllAnnoncesListAPIView(APIView):
 
     def get(self, request, *args, **kwargs):
 
-        annonces = Annonce.objects.all()
+        annonces = Annonce.objects.exclude(user_id=request.user).filter(published=True).order_by("-date_publication")
         if 'page' in request.query_params:
             paginator = Paginator(annonces, 5)
             page = request.query_params['page']

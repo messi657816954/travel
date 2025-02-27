@@ -26,6 +26,7 @@ class Pays(models.Model):
     label_en = models.CharField(max_length=100)
     currency = models.ForeignKey(Currency, on_delete=models.CASCADE, related_name='pays')
     digit_code = models.IntegerField()
+    active = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = 'Pays'

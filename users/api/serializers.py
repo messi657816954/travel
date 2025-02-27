@@ -5,7 +5,6 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from commons.api.serializers import PaysSerializer
 
 
-
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     @classmethod
@@ -21,18 +20,15 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         user = self.user
         cpte = Compte.objects.get(user=user)
         moyens = MoyenPaiementUser.objects.filter(user=user)
+        pays = Pays.objects.filter(id=user.pays.id)
         data['user'] = {
             'id': user.id,
-            'username': user.user_name,
+            'user_name': user.user_name,
             'firstname': user.firstname,
             'lastname': user.lastname,
             'email': user.email,
             'phone': user.phone,
-            'pays': {
-                'id': user.pays.id,
-                'iso_code3': user.pays.iso_code3,
-                'label': user.pays.label,
-            },
+            'pays': PaysSerializer(pays, many=True).data,
             # Ajoutez d'autres champs de l'utilisateur si nécessaire
         }
         data['compte'] = {
@@ -52,11 +48,10 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class RegistrationSerializer(serializers.ModelSerializer):
     # password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
-    username = serializers.CharField(source="user_name", read_only=True)
     pays_details = PaysSerializer(source='pays', read_only=True)
     class Meta:
         model = User
-        fields =  ['email','firstname','lastname','username', 'user_name','phone', 'password', 'otp', 'pays_details', 'pays']
+        fields =  ['email','firstname','lastname', 'user_name','phone', 'password', 'otp', 'pays_details', 'pays']
         extra_kwargs = {
             'password': {'write_only': True}
         }
