@@ -4,6 +4,7 @@ from annonces.models import Voyage, Annonce, AvisUser
 from commons.models import TypeBagage
 from users.api.serializers import UserDetailSerializer
 from commons.api.serializers import VilleSerializer
+from users.models import User
 
 
 class TypeBagageSerializer(serializers.ModelSerializer):
@@ -97,3 +98,84 @@ class AvisUserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data['utilisateur_auteur'] = self.context['request'].user
         return super().create(validated_data)
+
+
+
+
+
+
+
+from django.db.models import Avg, Count
+
+class UserSimpleSerializer(serializers.ModelSerializer):
+    # img = serializers.SerializerMethodField()
+    # name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['id', 'user_name']
+
+    # def get_img(self, obj):
+    #     # Remplacer par la logique réelle pour récupérer l'image de profil
+    #     # Si vous avez un modèle de profil utilisateur avec un champ image, utilisez-le ici
+    #     return "-----"
+    #
+    # def get_name(self, obj):
+    #     return obj.get_full_name() or obj.username
+
+class AvisRecusSerializer(serializers.ModelSerializer):
+    user_author = serializers.SerializerMethodField()
+    date = serializers.SerializerMethodField()
+    description = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AvisUser
+        fields = ['user_author', 'note', 'date', 'description']
+
+    def get_user_author(self, obj):
+        return UserSimpleSerializer(obj.utilisateur_auteur).data
+
+    def get_date(self, obj):
+        return obj.date_creation.strftime('%b %Y')
+
+    def get_description(self, obj):
+        return obj.commentaire or "**********"
+
+class AvisDonnesSerializer(serializers.ModelSerializer):
+    user_note = serializers.SerializerMethodField()
+    date = serializers.SerializerMethodField()
+    description = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AvisUser
+        fields = ['user_note', 'note', 'date', 'description']
+
+    def get_user_note(self, obj):
+        return UserSimpleSerializer(obj.utilisateur_note).data
+
+    def get_date(self, obj):
+        return obj.date_creation.strftime('%b %Y')
+
+    def get_description(self, obj):
+        return obj.commentaire or "**********"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

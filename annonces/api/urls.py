@@ -3,7 +3,7 @@ from django.urls import path
 from .views import (
     CreateAnnonceAPIView,
     ConfirmerLivraisonAPIView, PublierAnnonceAPIView, AnnonceDetailAPIView, AnnoncesListAPIView, UpdateAnnonceAPIView,
-    AllAnnoncesListAPIView, AnnonceSearchAPIView, DonnerAvisAPIView, ListerAvisRecusAPIView, VoirAvisUtilisateurAPIView
+    AllAnnoncesListAPIView, AnnonceSearchAPIView, DonnerAvisAPIView, UtilisateurAvisView
 )
 
 
@@ -24,5 +24,5 @@ urlpatterns = [
     path('avis/donner/', DonnerAvisAPIView.as_view(), name='donner_avis'),
 
     # GET endpoint to see avis for a specific user
-    path('avis/utilisateur/', VoirAvisUtilisateurAPIView.as_view(), name='voir_avis_utilisateur')
+    path('avis/utilisateur/', UtilisateurAvisView.as_view(), name='voir_avis_utilisateur')
 ]

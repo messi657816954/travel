@@ -12,9 +12,10 @@ from decimal import Decimal
 
 from commons.models import TypeBagage, Pays, Ville
 from annonces.models import Reservation, AvisUser
+from users.models import User
 from users.utils import reponses, generate_reference
 from .serializers import AnnonceSerializer, VoyageSerializer, TypeBagageSerializer, AnnonceDetailSerializer, \
-    AvisUserSerializer
+    AvisUserSerializer, AvisRecusSerializer, AvisDonnesSerializer
 from ..models import Annonce, TypeBagageAnnonce, Voyage
 from django.core.paginator import Paginator
 
@@ -331,7 +332,7 @@ async def send_email_async(subject, message, recipient_email):
 
 
 from datetime import datetime
-from django.db.models import Q, Avg
+from django.db.models import Q, Avg, Count
 
 
 class AnnonceSearchAPIView(APIView):
@@ -424,80 +425,90 @@ class DonnerAvisAPIView(generics.GenericAPIView):
 
 
 
-class ListerAvisRecusAPIView(generics.ListAPIView):
-    permission_classes = [IsAuthenticated]
-    serializer_class = AvisUserSerializer
-    pagination_class = PageNumberPagination  # Optional: Add pagination
+class UtilisateurAvisView(APIView):
+    permission_classes = [AllowAny]  # Autoriser l'accès sans authentification
 
-    def get_queryset(self):
-        """ Filtrage selon des query parameters """
-        queryset = AvisUser.objects.filter(utilisateur_note=self.request.user).order_by('-date_creation')
+    def get(self, request):
+        try:
+            # Récupérer le utilisateur_id depuis les query parameters (noter le nom du paramètre)
+            utilisateur_id = request.query_params.get('utilisateur_id', None)
 
-        # Filtre par date
-        date = self.request.query_params.get('date', None)
-        if date:
-            queryset = queryset.filter(date_creation__date=date)
+            if utilisateur_id is None:
+                return Response(
+                    [{
+                        "success": 0,
+                        "errors": [{"error_msg": "utilisateur_id est requis"}]
+                    }],
+                    status=status.HTTP_200_OK  # Gardons 200 comme dans votre exemple
+                )
 
-        # Filtre par type (annonce ou reservation)
-        type_avis = self.request.query_params.get('type', None)
-        if type_avis == 'annonce':
-            queryset = queryset.filter(annonce__isnull=False)
-        elif type_avis == 'reservation':
-            queryset = queryset.filter(reservation__isnull=False)
+            try:
+                user = User.objects.get(id=utilisateur_id)
+            except (User.DoesNotExist, ValueError):
+                return Response(
+                    [{
+                        "success": 0,
+                        "errors": [{"error_msg": "Utilisateur non trouvé"}]
+                    }],
+                    status=status.HTTP_200_OK  # Gardons 200 comme dans votre exemple
+                )
 
-        return queryset
+            # Récupérer tous les avis reçus par l'utilisateur
+            avis_recus = AvisUser.objects.filter(utilisateur_note=user).order_by('-date_creation')
 
-    def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
+            # Calculer la moyenne des notes
+            average = avis_recus.aggregate(Avg('note'))['note__avg'] or 0
 
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            paginated_data = self.get_paginated_response(serializer.data).data
-            res = reponses(success=1, results=paginated_data, error_msg="")
-            return Response(res)
+            # Compter le nombre total d'avis reçus
+            total_avis = avis_recus.count()
 
-        serializer = self.get_serializer(queryset, many=True)
-        res = reponses(success=1, results=serializer.data, error_msg="")
-        return Response(res)
+            # Calculer la distribution des notes
+            note_counts = avis_recus.values('note').annotate(count=Count('note'))
+            note_map = {
+                '5': 0,
+                '4': 0,
+                '3': 0,
+                '2': 0,
+                '1': 0
+            }
+            for item in note_counts:
+                note_map[str(item['note'])] = item['count']
+
+            # Récupérer les avis donnés par l'utilisateur
+            avis_donnes = AvisUser.objects.filter(utilisateur_auteur=user).order_by('-date_creation')
+
+            # Sérialiser les données
+            avis_recus_serializer = AvisRecusSerializer(avis_recus, many=True)
+            avis_donnes_serializer = AvisDonnesSerializer(avis_donnes, many=True)
+
+            # Construire la réponse
+            avis_data = {
+                'average': round(average, 1),
+                'total_avis_recieve': total_avis,
+                'map_note_type': note_map,
+                'avis_recieve': avis_recus_serializer.data,
+                'avis_give': avis_donnes_serializer.data
+            }
+
+            # Formater selon votre structure de réponse
+            response_data = [{
+                "success": 1,
+                "data": avis_data
+            }]
+
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            # Capturer toute exception et la formater selon votre structure de réponse
+            return Response(
+                [{
+                    "success": 0,
+                    "errors": [{"error_msg": str(e)}]
+                }],
+                status=status.HTTP_200_OK  # Gardons 200 comme dans votre exemple
+            )
 
 
-
-class VoirAvisUtilisateurAPIView(generics.ListAPIView):
-    permission_classes = [IsAuthenticated]
-    serializer_class = AvisUserSerializer
-    pagination_class = PageNumberPagination  # Optional: Add pagination
-
-    def get_queryset(self):
-        """ Retourne les avis donnés à un utilisateur spécifique """
-        utilisateur_id = self.request.query_params.get('utilisateur_id', None)
-        if not utilisateur_id:
-            return AvisUser.objects.none()
-
-        queryset = AvisUser.objects.filter(utilisateur_note=utilisateur_id).order_by('-date_creation')
-
-        # Filtre par type (annonce ou reservation)
-        type_avis = self.request.query_params.get('type', None)
-        if type_avis == 'annonce':
-            queryset = queryset.filter(annonce__isnull=False)
-        elif type_avis == 'reservation':
-            queryset = queryset.filter(reservation__isnull=False)
-
-        return queryset
-
-    def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            paginated_data = self.get_paginated_response(serializer.data).data
-            res = reponses(success=1, results=paginated_data, error_msg="")
-            return Response(res)
-
-        serializer = self.get_serializer(queryset, many=True)
-        res = reponses(success=1, results=serializer.data, error_msg="")
-        return Response(res)
 
 
 
