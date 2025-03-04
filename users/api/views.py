@@ -445,18 +445,20 @@ class UpdateEmailAPIView(APIView):
 
     def post(self, request, *args, **kwargs):
         try:
-            user = User.objects.get(pk=request.user.id)  # Utilisation de get() au lieu de filter()
-            new_email = request.data.get('email')  # Utilisation de .get() pour éviter KeyError
+            user = User.objects.get(pk=request.user.id)
+            new_email = request.data.get('email')
 
-            if new_email:  # Vérifier si l'email est fourni
+            if new_email:
                 user.email = new_email
                 user.save()
-                return Response({"message": "Email mis à jour avec succès"}, status=200)
+                res = reponses(success=1, results="Email mis à jour avec succès".encode('utf8'), error_msg='')
             else:
-                return Response({"error": "L'email est requis"}, status=400)
+                res = reponses(success=0, error_msg="L'email est requis".encode('utf8'))
 
         except ObjectDoesNotExist:
-            return Response({"error": "Utilisateur introuvable"}, status=404)
+            res = reponses(success=0, error_msg="Utilisateur introuvable".encode('utf8'))
+
+        return Response(res)
 
 
 
