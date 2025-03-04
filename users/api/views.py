@@ -445,9 +445,12 @@ class UpdateEmailAPIView(APIView):
 
     def post(self, request, *args, **kwargs):
 
-        user = User.objects.filter(id=request.user.id)
+        user = User.objects.filter(pk=request.user.id)
+        print("------- : ", user[0].email)
         user[0].email = request.data['email']
+        print("------- : ", request.data['email'], user[0].email)
         user[0].save()
+        print("------- : ", user[0].email)
         res = reponses(success=1, results="Email modifié avec succes", error_msg='')
         return Response(res)
 
