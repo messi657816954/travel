@@ -2,7 +2,8 @@ from django.urls import path
 from .views import RegistrationAPIView, VerifyOTPAPIView, LogoutBlacklistTokenUpdateView, MyTokenObtainPairView, \
     UserDetailClientView, InitRegistrationAPIView, InitForgotPasswordAPIView, \
     ChangePasswordView, PerformForgotPasswordAPIView, MoyenPaiementListCreateAPIView, MoyenPaiementDetailAPIView, \
-    InitierPaiementAPIView, PerformOtpAPIView, InitPhoneOtpAPIView
+    InitierPaiementAPIView, PerformOtpAPIView, InitPhoneOtpAPIView, InitUpdateEmailAPIView, UpdateEmailAPIView, \
+    UpdatePhoneAPIView, InitUpdatePhoneAPIView
 
 # from rest_framework_simplejwt.views import (
 #     TokenObtainPairView,
@@ -31,6 +32,12 @@ urlpatterns = [
 
     path('moyens-paiement/', MoyenPaiementListCreateAPIView.as_view(), name='moyen-paiement-list-create'),
     path('moyens-paiement/<int:pk>/', MoyenPaiementDetailAPIView.as_view(), name='moyen-paiement-detail'),
+
+    path('user/update/email/init', InitUpdateEmailAPIView.as_view(), name='Init-email-update'),
+    path('user/update/email', UpdateEmailAPIView.as_view(), name='email-update'),
+
+    path('user/update/phone/init', InitUpdatePhoneAPIView.as_view(), name='Init-phone-update'),
+    path('user/update/phone', UpdatePhoneAPIView.as_view(), name='phone-update'),
 
 
 ]

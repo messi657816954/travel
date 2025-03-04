@@ -3,6 +3,19 @@ import string
 from django.conf import settings
 import datetime
 
+from django.core.mail import send_mail, EmailMessage
+from twilio.rest import Client
+
+import environ
+
+
+env = environ.Env()
+environ.Env.read_env()  # Read .env file
+
+ACCOUNT_SID = env('TWILIO_ACCOUNT_SID', default='AC2bb830ebf39487cae5db6c5af2ed8b0f')
+AUTH_TOKEN = env('TWILIO_AUTH_TOKEN', default='e2d9dfbafac110a43096310ce9b99675')
+PHONE_NUMBER = env('TWILIO_PHONE_NUMBER', default='0000')
+
 
 ROLES = (
     ('MANAGER', 'MANAGER'),
@@ -209,43 +222,22 @@ def generate_reference():
     return reference
 
 
+def send_email(object, body, email_to):
 
+    mail = EmailMessage(
+        object,
+        body,
+        settings.EMAIL_HOST_USER,
+        email_to
+    )
+    mail.content_subtype = "html"
+    mail.send(fail_silently=True)
 
+def send_otp(code, phone_to):
 
-
-# from AppelFond.views import get_object_montant_transaction
-# from django.template.loader import render_to_string
-# from django.core.mail import send_mail, EmailMessage
-# # from django.conf import settings
-# from AppelFond.SocketHandler import SocketHandler
-# from AppelFond.models import TappelFonds, TOperations, Tbanque
-# from django.shortcuts import get_object_or_404
-# from AppelFond.api_afrikpay import *
-
-        
-        
-        
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    client = Client(ACCOUNT_SID, AUTH_TOKEN)
+    message = client.messages.create(
+        body=f"Ledjangui: Your Code is {code}. Do not share it with anyone.",
+        from_=PHONE_NUMBER,
+        to=phone_to
+    )

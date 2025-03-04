@@ -19,7 +19,6 @@ from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail, EmailMessage
 from users.utils import *
 from django.conf import settings
-from twilio.rest import Client
 from datetime import datetime, timedelta
 from django.utils import timezone
 
@@ -28,16 +27,6 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from django.db import transaction
-
-import environ
-
-
-env = environ.Env()
-environ.Env.read_env()  # Read .env file
-
-ACCOUNT_SID = env('TWILIO_ACCOUNT_SID', default='AC2bb830ebf39487cae5db6c5af2ed8b0f')
-AUTH_TOKEN = env('TWILIO_AUTH_TOKEN', default='e2d9dfbafac110a43096310ce9b99675')
-PHONE_NUMBER = env('TWILIO_PHONE_NUMBER', default='0000')
 
 
 
@@ -283,9 +272,6 @@ class PerformForgotPasswordAPIView(APIView):
         res = reponses(success=0, error_msg="Pas d'utilisateur correspondant à cet email")
         return Response(res)
 
-
-
-
 class InitForgotPasswordAPIView(APIView):
     permission_classes = (AllowAny,)
 
@@ -414,35 +400,6 @@ class MoyenPaiementDetailAPIView(APIView):
         res = reponses(success=1, results="Moyen de paiement supprimé avec succès.", error_msg='')
         return Response(res, status=status.HTTP_204_NO_CONTENT)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     def reponses(self, success, num_page=None, results=None, error_msg=None):
         RESPONSE_MSG = [{'success': success}]
 
@@ -457,6 +414,42 @@ class MoyenPaiementDetailAPIView(APIView):
             RESPONSE_MSG[0].update({'errors': [{'error_msg': error_msg}]})
 
         return RESPONSE_MSG
+
+class InitUpdateEmailAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+
+        code = generate_password()
+        user = User.objects.filter(email=request.data['email'])
+        if not user:
+            message = render_to_string('email_update.html', {'code': code})
+            object = "Modification adresse mail"
+            send_email(object, message, request.data['email'])
+            res = {
+                'otp': code,
+                'otp_created_at': datetime.now(),
+                'msg': "Code envoyé par email avec succès"
+            }
+
+            res = reponses(success=1, results=res, error_msg='')
+            return Response(res)
+
+        else:
+            msg = "Un utilisateur avec cet email {} existe déjà!".format(request.data['email'])
+            res = reponses(success=0, error_msg=msg.encode('utf8'))
+            return Response(res)
+
+class UpdateEmailAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+
+        user = User.objects.filter(id=request.user.id)
+        user.email = request.data['email']
+        user.save()
+        res = reponses(success=1, results="Email modifié avec succes", error_msg='')
+        return Response(res)
 
 
 
@@ -513,19 +506,13 @@ class InitPhoneOtpAPIView(APIView):
     def post(self, request, *args, **kwargs):
 # request.data['phone']
         code = generate_password()
-        print("------------code otp : ",code)
         user = User.objects.filter(pk=request.user.id)
         if user:
             user[0].otp = code
             user[0].otp_created_at = datetime.now()
             user[0].save()
             # todo: envoyer code par sms request.data['phone']
-            client = Client(ACCOUNT_SID, AUTH_TOKEN)
-            message = client.messages.create(
-                body=f"Your OTP is {code}. Do not share it with anyone.",
-                from_=PHONE_NUMBER,
-                to=user[0].phone
-            )
+            send_otp(code, user[0].phone)
 
             res = reponses(success=1, results="Code envoyé par sms avec succès", error_msg='')
             return Response(res)
@@ -554,9 +541,51 @@ class PerformOtpAPIView(APIView):
                 else:
                     res = reponses(success=0, error_msg="Le code ne correspond pas")
         else:
-            res = reponses(success=0, error_msg="Pas d'utilisateur correspondant à cet email")
+            res = reponses(success=0, error_msg="Pas d'utilisateur correspondant")
         return Response(res)
 
+
+class InitUpdatePhoneAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+
+        code = generate_password()
+        user = User.objects.filter(email=request.data['phone'])
+        if not user:
+            update_user = User.objects.filter(id=request.user.id)
+            send_otp(code, request.data['phone'])
+            update_user.otp = code
+            update_user.otp_created_at = datetime.now()
+            update_user.save()
+
+            res = reponses(success=1, results="Code envoyé avec succès", error_msg='')
+            return Response(res)
+
+        else:
+            msg = "Un utilisateur avec ce numéro de téléphone {} existe déjà!".format(request.data['phone'])
+            res = reponses(success=0, error_msg=msg.encode('utf8'))
+            return Response(res)
+
+class UpdatePhoneAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+
+        user = User.objects.filter(pk=request.user.id)
+        if user:
+            if timezone.now() - user[0].otp_created_at > timedelta(minutes=5):
+                res = reponses(success=0, error_msg="Le code a expiré")
+            else:
+                if user[0].otp == request.data['otp']:
+                    user[0].phone = request.data['phone']
+                    user[0].save()
+                    res = reponses(success=1, results="La modification a été effectué avec succès".encode('utf8'),error_msg='')
+                else:
+                    res = reponses(success=0, error_msg="Le code ne correspond pas")
+        else:
+            res = reponses(success=0, error_msg="Pas d'utilisateur correspondant")
+        return Response(res)
 
 
 
