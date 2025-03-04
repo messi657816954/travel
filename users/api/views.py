@@ -561,7 +561,7 @@ class InitUpdatePhoneAPIView(APIView):
         code = generate_password()
         user = User.objects.filter(email=request.data['phone'])
         if not user:
-            update_user = User.objects.filter(id=request.user.id)
+            update_user = User.objects.get(id=request.user.id)
             send_otp(code, request.data['phone'])
             update_user.otp = code
             update_user.otp_created_at = datetime.now()
