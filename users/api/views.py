@@ -451,12 +451,12 @@ class UpdateEmailAPIView(APIView):
             if new_email:  # Vérifier si l'email est fourni
                 user.email = new_email
                 user.save()
-                return reponses(success=1, results="Email mis à jour avec succès", error_msg='')
+                return Response({"message": "Email mis à jour avec succès"}, status=200)
             else:
-                return reponses(success=0, error_msg="L'email est requis")
+                return Response({"error": "L'email est requis"}, status=400)
 
         except ObjectDoesNotExist:
-            return reponses(success=0, results="Utilisateur introuvable")
+            return Response({"error": "Utilisateur introuvable"}, status=404)
 
 
 
