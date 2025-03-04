@@ -499,7 +499,6 @@ class InitierPaiementAPIView(APIView):
             return Response(reponses(success=0, error_msg=str(e)))
 
 
-
 class InitPhoneOtpAPIView(APIView):
     permission_classes = (AllowAny,)
 

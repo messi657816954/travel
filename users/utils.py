@@ -237,7 +237,7 @@ def send_otp(code, phone_to):
 
     client = Client(ACCOUNT_SID, AUTH_TOKEN)
     message = client.messages.create(
-        body=f"Ledjangui: Your Code is {code}. Do not share it with anyone.",
+        body=f"Lejangui: Your Code is {code}. Do not share it with anyone.",
         from_=PHONE_NUMBER,
         to=phone_to
     )
