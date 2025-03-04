@@ -228,7 +228,7 @@ def send_email(object, body, email_to):
         object,
         body,
         settings.EMAIL_HOST_USER,
-        email_to
+        [email_to]
     )
     mail.content_subtype = "html"
     mail.send(fail_silently=True)
