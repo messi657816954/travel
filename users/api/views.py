@@ -560,7 +560,11 @@ class InitUpdatePhoneAPIView(APIView):
 
         code = generate_password()
         user = User.objects.filter(email=request.data['phone'])
-        if not user:
+        if user:
+            msg = "Un utilisateur avec ce numéro de téléphone {} existe déjà!".format(request.data['phone'])
+            res = reponses(success=0, error_msg=msg.encode('utf8'))
+            return Response(res)
+        else:
             update_user = User.objects.get(id=request.user.id)
             send_otp(code, request.data['phone'])
             update_user.otp = code
@@ -568,11 +572,6 @@ class InitUpdatePhoneAPIView(APIView):
             update_user.save()
 
             res = reponses(success=1, results="Code envoyé avec succès", error_msg='')
-            return Response(res)
-
-        else:
-            msg = "Un utilisateur avec ce numéro de téléphone {} existe déjà!".format(request.data['phone'])
-            res = reponses(success=0, error_msg=msg.encode('utf8'))
             return Response(res)
 
 class UpdatePhoneAPIView(APIView):
