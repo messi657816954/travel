@@ -558,27 +558,20 @@ class InitUpdatePhoneAPIView(APIView):
 
     def post(self, request, *args, **kwargs):
         phone = request.data.get('phone')
-        if not phone:
-            res = reponses(success=0, error_msg="Le numéro de téléphone est requis".encode('utf8'))
-
         if User.objects.filter(phone=phone).exists():
             msg = f"Un utilisateur avec ce numéro de téléphone {phone} existe déjà!"
             res = reponses(success=0, error_msg=msg.encode('utf8'))
-
+            return Response(res)
         try:
             update_user = User.objects.get(id=request.user.id)
+            code = generate_password()
+            send_otp(code, phone)
+            update_user.otp = code
+            update_user.otp_created_at = datetime.now()
+            update_user.save()
+            res = reponses(success=1, results="Code envoyé avec succès".encode('utf8'), error_msg='')
         except ObjectDoesNotExist:
             res = reponses(success=0, error_msg="Utilisateur introuvable")
-
-        code = generate_password()
-        send_otp(code, phone)
-
-        update_user.otp = code
-        update_user.otp_created_at = datetime.now()
-        update_user.save()
-
-        res = reponses(success=1, results="Code envoyé avec succès".encode('utf8'), error_msg='')
-
         return Response(res)
 
 
