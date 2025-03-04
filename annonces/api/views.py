@@ -402,16 +402,24 @@ class DonnerAvisAPIView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         data = request.data.copy()
         query_data = request.query_params.copy()
+        utilisateur_note = query_data.get("utilisateur_note",None)
         data["utilisateur_auteur"] = request.user.id  # L'utilisateur connecté donne l'avis
+
 
         # Validate that either annonce or reservation is provided, not both
         if ('annonce' in query_data and 'reservation' in query_data) or ('annonce' not in query_data and 'reservation' not in query_data):
             res = reponses(success=0, results={}, error_msg="Un avis doit être lié soit à une réservation, soit à une annonce, mais pas les deux.")
             return Response(res, status=status.HTTP_400_BAD_REQUEST)
 
+        if not utilisateur_note :
+            res = reponses(success=0, results={}, error_msg="Spécifiez l'utilisateur à noter.")
+            return Response(res, status=status.HTTP_400_BAD_REQUEST)
+
+
         print(f"Utilisateur authentifié: {request.user.id}")
         data["annonce"] = query_data.get("annonce",None)
         data["reservation"] = query_data.get("reservation",None)
+        data["utilisateur_note"] = utilisateur_note
 
         serializer = self.get_serializer(data=data, context={'request': request})
         if serializer.is_valid():
