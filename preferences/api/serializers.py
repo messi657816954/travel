@@ -20,3 +20,14 @@ class UserPreferenceSerializer(serializers.ModelSerializer):
             instance.language = language
 
         return super().update(instance, validated_data)
+
+    def to_representation(self, instance):
+        """ Personnalise la sortie pour inclure les détails de la langue """
+        representation = super().to_representation(instance)
+        if instance.language:
+            representation['language'] = {
+                'id': instance.language.id,
+                'code': instance.language.code,
+                'name': instance.language.name
+            }
+        return representation
