@@ -7,7 +7,7 @@ class LanguageSerializer(serializers.ModelSerializer):
         fields = ['id', 'code', 'name']
 
 class UserPreferenceSerializer(serializers.ModelSerializer):
-    language = LanguageSerializer()
+    language = serializers.PrimaryKeyRelatedField(queryset=Language.objects.all())
 
     class Meta:
         model = UserPreference
@@ -15,9 +15,9 @@ class UserPreferenceSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
 
-        language_data = validated_data.pop('language', None)
-        if language_data:
-            language = Language.objects.get(id=language_data['id'])
+        language_id = validated_data.pop('language', None)
+        if language_id:
+            language = Language.objects.get(id=language_id)
             instance.language = language
 
         return super().update(instance, validated_data)
