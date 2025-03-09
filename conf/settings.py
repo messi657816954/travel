@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'annonces',
     'commons',
     'reservations',
+    'preferences',
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
 ]
