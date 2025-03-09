@@ -6,4 +6,4 @@ __pycache__/
 *.log
 */migrations/
 .idea/
-*/*/.env
+*/.env
