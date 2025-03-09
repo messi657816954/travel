@@ -8,7 +8,7 @@ class UserPreferenceView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
-        obj, created = UserPreference.objects.get_or_create(user=self.request.user)
+        obj, created = UserPreference.objects.get_or_create(user_id=self.request.user)
         return obj
 
 class LanguageListView(generics.ListAPIView):
