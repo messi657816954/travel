@@ -15,9 +15,9 @@ class UserPreferenceSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
 
-        language_id = validated_data.pop('language', None)
-        if language_id:
-            language = Language.objects.get(id=language_id)
-            instance.language = language
+        language = validated_data.pop('language', None)
+        if language:
+            language_id = language.id
+            instance.language = language_id
 
         return super().update(instance, validated_data)
