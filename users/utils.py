@@ -6,6 +6,8 @@ import datetime
 from django.core.mail import send_mail, EmailMessage
 from twilio.rest import Client
 
+from cryptography.fernet import Fernet
+
 import environ
 
 
@@ -15,6 +17,7 @@ environ.Env.read_env()  # Read .env file
 ACCOUNT_SID = env('TWILIO_ACCOUNT_SID', default='AC2bb830ebf39487cae5db6c5af2ed8b0f')
 AUTH_TOKEN = env('TWILIO_AUTH_TOKEN', default='e2d9dfbafac110a43096310ce9b99675')
 PHONE_NUMBER = env('TWILIO_PHONE_NUMBER', default='0000')
+ENCRYPTION_KEY = env('ENCRYPTION_KEY', default='TaCleSuperSecurisee1234567890=')
 
 
 ROLES = (
@@ -241,3 +244,11 @@ def send_otp(code, phone_to):
         from_=PHONE_NUMBER,
         to=phone_to
     )
+
+fernet = Fernet(settings.ENCRYPTION_KEY.encode())
+
+def encrypt_data(data: str) -> str:
+    return fernet.encrypt(data.encode()).decode()
+
+def decrypt_data(data: str) -> str:
+    return fernet.decrypt(data.encode()).decode()
