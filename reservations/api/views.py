@@ -180,6 +180,7 @@ class PublishReservationAPIView(APIView):
             return Response(reponses(success=0, error_msg=str(e)))
 
 
+
 class ConfirmReservationByAnnonceurAPIView(APIView):
     permission_classes = (IsAuthenticated,)
 
@@ -189,27 +190,58 @@ class ConfirmReservationByAnnonceurAPIView(APIView):
             reservation = Reservation.objects.get(id=request.query_params['reservation_id'])
             # Mettre à jour le statut de la réservation
             code_reception = generate_password()
-            print("-----------code_reception-----: ",code_reception)
+            print("-----------code_reception-----: ", code_reception)
             reservation.statut = 'VALIDATE'
             reservation.code_reception = code_reception
             reservation.save()
-            user_compte = Compte.objects.get(user=request.user)  # Compte de l'utilisateur connecté
-            reservation_compte = Compte.objects.get(user=reservation.user)  # Compte de l'utilisateur de l'annonce
+
+            reservation_compte = None
+            user_compte = None
+
+            try:
+                user_compte = Compte.objects.get(user=request.user)  # Compte de l'utilisateur connecté
+            except Compte.DoesNotExist:
+                return Response(reponses(success=0, error_msg="Impossible de récupérer le compte de l'utilisateur connecté."))
+
+            try:
+                reservation_compte = Compte.objects.get(user=reservation.user)  # Compte de l'utilisateur de l'annonce
+            except Compte.DoesNotExist:
+                return Response(reponses(success=0, error_msg="Impossible de récupérer le compte de l'utilisateur ayant éffectué la reservation."))
 
             # Confirmer Transaction DEBIT
-            transaction_debit = Transaction.objects.get(compte=reservation_compte,reservation=reservation,transaction_status="PENDING",transaction_type="DEBIT")
-            transaction_credit = Transaction.objects.get(compte=user_compte,reservation=reservation,transaction_status="PENDING",transaction_type="CREDIT")
-            transaction_debit.transaction_status  = "SUCCESSFUL"
-            transaction_credit.transaction_status = "SUCCESSFUL"
-            transaction_credit.save()
-            transaction_debit.save()
-            user_compte.calculate_balances()
-            reservation_compte.calculate_balances()
-            return Response(reponses(success=1, results={'message': 'Reservation annulée avec succès'}))
+            try:
+                transaction_debit = Transaction.objects.get(
+                    compte=reservation_compte,
+                    reservation=reservation,
+                    transaction_status="PENDING",
+                    transaction_type="DEBIT"
+                )
+                transaction_debit.transaction_status = "SUCCESSFUL"
+                transaction_debit.save()  # Fixed: was trying to save transaction_credit
+                reservation_compte.calculate_balances()
+            except Transaction.DoesNotExist:  # Fixed: was using Compte.DoesNotExist
+                return Response(reponses(success=0, error_msg="Impossible de récupérer la transaction PENDING du compte de l'utilisateur ayant éffectué la reservation."))
+
+            # Confirmer Transaction CREDIT
+            try:
+                transaction_credit = Transaction.objects.get(
+                    compte=user_compte,
+                    reservation=reservation,
+                    transaction_status="PENDING",
+                    transaction_type="CREDIT"
+                )
+                transaction_credit.transaction_status = "SUCCESSFUL"
+                transaction_credit.save()  # Fixed: was trying to save transaction_debit
+                user_compte.calculate_balances()
+            except Transaction.DoesNotExist:  # Fixed: was using Compte.DoesNotExist
+                return Response(reponses(success=0, error_msg="Impossible de récupérer la transaction PENDING du compte de l'utilisateur ayant éffectué l'annonce."))
+
+            return Response(reponses(success=1, results={'message': 'Reservation Confirmée avec succès'}))
         except Reservation.DoesNotExist:
             return Response(reponses(success=0, error_msg='Réservation non trouvée'))
         except Exception as e:
             return Response(reponses(success=0, error_msg=str(e)))
+
 
 
 class CancelReservationByAnnonceurAPIView(APIView):
