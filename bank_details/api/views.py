@@ -1,6 +1,7 @@
 from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.permissions import *
 from django.db import transaction
 import stripe
 from django.conf import settings
@@ -9,7 +10,7 @@ from bank_details.models import BankDetails, PaymentMethods
 
 
 class ListPaymentMethodsBaseView(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = [IsAuthenticated]
 
     def get_payment_methods(self, use_values):
         return PaymentMethods.objects.filter(use__in=use_values, active=True)
@@ -37,7 +38,7 @@ class ListWithdrawMethodsView(ListPaymentMethodsBaseView):
 
 
 class BankDetailsView(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = [IsAuthenticated]
 
     @transaction.atomic
     def post(self, request):
@@ -61,7 +62,7 @@ class BankDetailsView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class ListBankDetailsView(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         user = request.user
@@ -75,7 +76,7 @@ class ListBankDetailsView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
 class DeleteBankDetailsView(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = [IsAuthenticated]
 
     def delete(self, request, pk, *args, **kwargs):
         bank_detail = BankDetails.objects.get(id=pk)
