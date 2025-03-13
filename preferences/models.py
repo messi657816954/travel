@@ -1,5 +1,6 @@
 from users.models import User
 from django.db import models
+from commons.models import Currency
 
 class Language(models.Model):
     code = models.CharField(max_length=5, unique=True)
@@ -25,6 +26,7 @@ class UserPreference(models.Model):
     language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True)
     theme = models.CharField(max_length=10, choices=THEME_CHOICES, default='light')
     communication = models.CharField(max_length=10, choices=COMMUNICATION_CHOICES, default='email')
+    currency = models.ForeignKey(Currency, on_delete=models.CASCADE)
 
     def __str__(self):
         return f"Preferences of {self.user.username}"

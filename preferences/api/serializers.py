@@ -11,13 +11,17 @@ class UserPreferenceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserPreference
-        fields = ['language', 'theme', 'communication']
+        fields = ['language', 'theme', 'communication', 'currency']
 
     def update(self, instance, validated_data):
 
         language = validated_data.pop('language', None)
         if language:
             instance.language = language
+
+        currency = validated_data.pop('currency', None)
+        if currency:
+            instance.currency = currency
 
         return super().update(instance, validated_data)
 
@@ -29,5 +33,11 @@ class UserPreferenceSerializer(serializers.ModelSerializer):
                 'id': instance.language.id,
                 'code': instance.language.code,
                 'name': instance.language.name
+            }
+        if instance.currency:
+            representation['currency'] = {
+                'id': instance.currency.id,
+                'code': instance.currency.code,
+                'symbole': instance.currency.symbole
             }
         return representation

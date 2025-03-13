@@ -7,15 +7,17 @@ from django.core.validators import MinValueValidator
 TRANSACTIONS_STATE = [
     ('failed', 'Failed'),
     ('canceled', 'Canceled'),
+    ('paid', 'Paid'),
     ("pendind", "Pending"),
-    ("completed", "Completed"),
-    ("refund", "Refund")
+    ("completed", "Completed")
 ]
 
 TRANSACTIONS_TYPE = [
     ("deposit", "Deposit"),
     ("fees", "Fees"),
-    ("transfer", "Transfer")
+    ("transfer", "Transfer"),
+    ("withdraw", "Withdraw"),
+    ("refund", "Refund")
 ]
 
 class Transactions(models.Model):
@@ -25,9 +27,9 @@ class Transactions(models.Model):
     amount = models.DoubleField(max_digits=12, decimal_places=2, default=0.00, validators=[MinValueValidator(0.01)])
     amount_to_collect = models.DoubleField(max_digits=12, decimal_places=2, default=0.00)
     currency = models.ForeignKey(Currency, on_delete=models.CASCADE)
-    announce = models.ForeignKey(Annonce, on_delete=models.CASCADE)
-    reservation = models.ForeignKey(Reservation, on_delete=models.CASCADE)
-    sender = models.ForeignKey('User', on_delete=models.CASCADE, related_name='sent_transactions')
-    beneficiary = models.ForeignKey('User', on_delete=models.CASCADE, related_name='received_transactions')
+    announce = models.ForeignKey(Annonce, on_delete=models.CASCADE, null=True, blank=True)
+    reservation = models.ForeignKey(Reservation, on_delete=models.CASCADE, null=True, blank=True)
+    sender = models.ForeignKey('User', on_delete=models.CASCADE, null=True, blank=True)
+    beneficiary = models.ForeignKey('User', on_delete=models.CASCADE, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -11,5 +11,6 @@ urlpatterns = [
     path('ws/api/v1/referentiel/', include('commons.api.urls')),
     path('ws/api/v1/preference/', include('preferences.api.urls')),
     path('ws/api/v1/', include('bank_details.api.urls')),
+    path('ws/api/v1/account/', include('transactions.api.urls')),
     
 ]
