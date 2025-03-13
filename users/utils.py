@@ -245,7 +245,7 @@ def send_otp(code, phone_to):
         to=phone_to
     )
 
-fernet = Fernet(settings.ENCRYPTION_KEY.encode())
+fernet = Fernet(ENCRYPTION_KEY.encode())
 
 def encrypt_data(data: str) -> str:
     return fernet.encrypt(data.encode()).decode()
