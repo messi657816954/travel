@@ -69,7 +69,7 @@ class ListBankDetailsView(APIView):
         methods = BankDetails.objects.filter(user_id=user)
         data = [
             {
-                "name": method,
+                "name": str(method),
             }
             for method in methods
         ]
