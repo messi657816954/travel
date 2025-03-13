@@ -7,7 +7,7 @@ USE_CHOICES = [("in", "Paiement"),
     ("both", "Paiement et Retrait")]
 
 class PaymentMethods(models.Model):
-    code = models.CharField(unique=True)
+    code = models.CharField(max_length=20, unique=True)
     name = models.CharField(max_length=100)
     use = models.CharField(max_length=20, choices=USE_CHOICES)
     active = models.BooleanField()
