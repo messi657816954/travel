@@ -220,7 +220,7 @@ class ConfirmerLivraisonAPIView(APIView):
 
 
 class AnnoncesListAPIView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
 
@@ -249,7 +249,7 @@ class AllAnnoncesListAPIView(APIView):
 
     def get(self, request, *args, **kwargs):
 
-        annonces = Annonce.objects.exclude(user_id=request.user).filter(published=True).order_by("-date_publication")
+        annonces = Annonce.objects.filter(published=True).order_by("-date_publication")
         if 'page' in request.query_params:
             paginator = Paginator(annonces, 5)
             page = request.query_params['page']
