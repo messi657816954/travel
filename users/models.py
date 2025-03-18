@@ -50,7 +50,7 @@ class User(AbstractBaseUser,PermissionsMixin):
     zip_code = models.CharField(max_length=100, null=True,blank=True)
     address = models.CharField(max_length=100, null=True,blank=True)
     city = models.CharField(max_length=100, null=True,blank=True)
-    # is_phone_verify = models.BooleanField(default=False)
+    is_identity_check = models.BooleanField(default=False)
 
 
     REGISTRATION_CHOICES = [
