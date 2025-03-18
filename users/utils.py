@@ -252,3 +252,64 @@ def encrypt_data(data: str) -> str:
 
 def decrypt_data(data: str) -> str:
     return fernet.decrypt(data.encode()).decode()
+
+
+
+
+
+
+from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
+from django.conf import settings
+from twilio.rest import Client
+from django.core.exceptions import ObjectDoesNotExist
+
+
+
+def notify_user(user, subject, template_name=None, context=None, plain_message=None):
+    """
+    Notifie un utilisateur selon ses préférences de communication, avec email par défaut si 'none'.
+
+    Args:
+        user (User): L'utilisateur à notifier.
+        subject (str): Sujet de la notification (utilisé pour email).
+        template_name (str, optional): Nom du template HTML pour email.
+        context (dict, optional): Contexte pour rendre le template email.
+        plain_message (str, optional): Message texte brut pour SMS ou fallback.
+    """
+    try:
+        preferences = user.preferences  # Récupérer les préférences
+        communication_method = preferences.communication
+    except ObjectDoesNotExist:
+        communication_method = 'email'  # Par défaut si pas de préférences
+
+    if communication_method in ['email', 'none'] and template_name and context:
+        # Notification par email (par défaut pour 'none')
+        message = render_to_string(template_name, context)
+        mail = EmailMessage(
+            subject,
+            message,
+            settings.EMAIL_HOST_USER,
+            [user.email]
+        )
+        mail.content_subtype = "html"
+        mail.send(fail_silently=True)
+
+    elif communication_method == 'sms' and plain_message:
+        # Notification par SMS
+        client = Client(ACCOUNT_SID, AUTH_TOKEN)
+        client.messages.create(
+            body=plain_message,
+            from_=PHONE_NUMBER,
+            to=user.phone
+        )
+
+    else:
+        # Cas de fallback ou erreur
+        if communication_method == 'email' and not (template_name and context):
+            raise ValueError("Pour email, template_name et context sont requis")
+        if communication_method == 'sms' and not plain_message:
+            raise ValueError("Pour SMS, plain_message est requis")
+
+
+

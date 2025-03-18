@@ -59,6 +59,21 @@ class MyTokenObtainPairView(TokenObtainPairView):
         return Response(res)
 
 
+class UpdateProfilePictureAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        if 'profile_picture' not in request.FILES:
+            return Response(reponses(success=0, error_msg="Aucune image fournie"))
+
+        user.profile_picture = request.FILES['profile_picture']
+        user.save()
+
+        serializer = UserDetailSerializer(user)
+        return Response(reponses(success=1, results=serializer.data))
+
+
 
 class RegistrationAPIView(generics.GenericAPIView):
     '''Registers user'''
