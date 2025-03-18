@@ -35,6 +35,7 @@ class Annonce(TimeStampedModel):
     published = models.BooleanField(default=False)
     # type_bagage_auto = models.CharField(max_length=100)
     nombre_kg_dispo = models.IntegerField()
+    nombre_kg = models.IntegerField()
     montant_par_kg = models.DecimalField(max_digits=10, decimal_places=2)
     cout_total = models.DecimalField(max_digits=10, decimal_places=2)
     commission = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)

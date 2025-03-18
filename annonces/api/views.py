@@ -49,12 +49,14 @@ class CreateAnnonceAPIView(APIView):
             # 2. Créer ensuite l'annonce
             montant_par_kg = Decimal(request.data['montant_par_kg'])
             nombre_kg = Decimal(request.data['nombre_kg_dispo'])
+            nombre_kg_dispo = Decimal(request.data['nombre_kg_dispo'])
             cout_total = montant_par_kg * nombre_kg
 
             annonce_data = {
                 'published': False,
                 # 'type_bagage_auto': request.data['type_bagage_auto'],
-                'nombre_kg_dispo': nombre_kg,
+                'nombre_kg_dispo': nombre_kg_dispo,
+                'nombre_kg': nombre_kg,
                 'montant_par_kg': montant_par_kg,
                 'cout_total': cout_total,
                 'reference': generate_reference(),
@@ -132,6 +134,7 @@ class UpdateAnnonceAPIView(APIView):
             annonce_data = {
                 # 'type_bagage_auto': request.data['type_bagage_auto'],
                 'nombre_kg_dispo': nombre_kg,
+                'nombre_kg': nombre_kg,
                 'montant_par_kg': montant_par_kg,
                 'cout_total': cout_total,
             }
@@ -143,18 +146,9 @@ class UpdateAnnonceAPIView(APIView):
                 ))
 
             annonce = annonce_serializer.save()
-            TypeBagageAnnonce.objects.filter(annonce=annonce).delete()
-            # list_id_bagage_auto = list()
-            # for rec in request.data['list_bagage']:
-            #     bagage = TypeBagage.objects.get(pk=rec)
-            #     list_id_bagage_auto.append(TypeBagageAnnonce(type_bagage=bagage,annonce=annonce))
-            #
-            # TypeBagageAnnonce.objects.bulk_create(list_id_bagage_auto)
-            # # 3. Préparer la réponse avec les données combinées
-            # list_bagage_auto = TypeBagage.objects.filter(id__in=request.data['list_bagage'])
+
             response_data = {
                 **annonce_serializer.data,
-                #'bagage_auto': TypeBagageSerializer(list_bagage_auto,many=True).data,
             }
 
             return Response(reponses(success=1, results=response_data))
