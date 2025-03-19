@@ -20,16 +20,60 @@ TRANSACTIONS_TYPE = [
     ("refund", "Refund")
 ]
 
+
+
 class Transactions(models.Model):
-    ref = models.CharField(unique=True)
-    type = models.CharField(choices=TRANSACTIONS_TYPE)
-    state = models.CharField(choices=TRANSACTIONS_STATE)
-    amount = models.DoubleField(max_digits=12, decimal_places=2, default=0.00, validators=[MinValueValidator(0.01)])
-    amount_to_collect = models.DoubleField(max_digits=12, decimal_places=2, default=0.00)
+    ref = models.CharField(max_length=255, unique=True)  # Ajout de max_length
+    type = models.CharField(max_length=20, choices=TRANSACTIONS_TYPE)  # Ajout de max_length
+    state = models.CharField(max_length=20, choices=TRANSACTIONS_STATE)  # Ajout de max_length
+    amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0.00,
+        validators=[MinValueValidator(0.01)]
+    )
+    amount_to_collect = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0.00,
+        validators=[MinValueValidator(0.00)]  # Permet 0 pour amount_to_collect
+    )
     currency = models.ForeignKey(Currency, on_delete=models.CASCADE)
-    announce = models.ForeignKey(Annonce, on_delete=models.CASCADE, null=True, blank=True)
-    reservation = models.ForeignKey(Reservation, on_delete=models.CASCADE, null=True, blank=True)
-    sender = models.ForeignKey('User', on_delete=models.CASCADE, null=True, blank=True)
-    beneficiary = models.ForeignKey('User', on_delete=models.CASCADE, null=True, blank=True)
+    announce = models.ForeignKey(
+        Annonce,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='transactions'  # Ajout de related_name
+    )
+    reservation = models.ForeignKey(
+        Reservation,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='transactions'  # Ajout de related_name
+    )
+    sender = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='sent_transactions'  # Ajout de related_name
+    )
+    beneficiary = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='received_transactions'  # Ajout de related_name
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Transaction'  # Nom au singulier
+        verbose_name_plural = 'Transactions'  # Nom au pluriel
+        ordering = ['-created_at']  # Tri par défaut par date de création décroissante
+
+    def __str__(self):
+        return f"Transaction {self.ref} - {self.type} ({self.state})"

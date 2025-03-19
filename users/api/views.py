@@ -70,8 +70,20 @@ class UpdateProfilePictureAPIView(APIView):
         user.profile_picture = request.FILES['profile_picture']
         user.save()
 
-        serializer = UserDetailSerializer(user)
-        return Response(reponses(success=1, results=serializer.data))
+        cpte = Compte.objects.get(user=request.user)
+        compte_serializer = CompteSerializer(cpte)
+        moyens = MoyenPaiementUser.objects.filter(user=request.user)
+        type_paiement_serializer = MoyenPaiementSerializer(moyens, many=True)
+
+        user_serializer = UserDetailSerializer(user, context={'request': request})
+
+        response_data = {
+            **user_serializer.data,  # Données de l'utilisateur avec URL complète
+            'compte': compte_serializer.data,
+            'type_paiement': type_paiement_serializer.data
+        }
+
+        return Response(reponses(success=1, results=response_data))
 
 
 
@@ -454,6 +466,8 @@ class InitUpdateEmailAPIView(APIView):
             msg = "Un utilisateur avec cet email {} existe déjà!".format(request.data['email'])
             res = reponses(success=0, error_msg=msg.encode('utf8'))
             return Response(res)
+
+
 
 class UpdateEmailAPIView(APIView):
     permission_classes = [IsAuthenticated]

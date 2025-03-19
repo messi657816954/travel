@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'reservations',
     'preferences',
     'bank_details',
+    'transactions',
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
 ]
@@ -79,33 +80,33 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'conf.wsgi.application'
 
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'lejangui',  # Nom de la base de données
-        'USER': 'lejangui',  # Utilisateur de la base de données
-        'PASSWORD': 'lejangui',  # Mot de passe de l'utilisateur
-        'HOST': 'localhost',  # L'hôte, ici c'est local
-        # 'HOST': '54.36.163.57', #'localhost',  # L'hôte, ici c'est local
-        'PORT': '5432',  # Port par défaut pour PostgreSQL
-    }
-}
-
-
-
-
+#
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
 #         'NAME': 'lejangui',  # Nom de la base de données
-#         'USER': 'postgres',  # Utilisateur de la base de données
+#         'USER': 'lejangui',  # Utilisateur de la base de données
 #         'PASSWORD': 'lejangui',  # Mot de passe de l'utilisateur
 #         'HOST': 'localhost',  # L'hôte, ici c'est local
 #         # 'HOST': '54.36.163.57', #'localhost',  # L'hôte, ici c'est local
 #         'PORT': '5432',  # Port par défaut pour PostgreSQL
 #     }
 # }
+
+
+
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'lejangui',  # Nom de la base de données
+        'USER': 'postgres',  # Utilisateur de la base de données
+        'PASSWORD': 'lejangui',  # Mot de passe de l'utilisateur
+        'HOST': 'localhost',  # L'hôte, ici c'est local
+        # 'HOST': '54.36.163.57', #'localhost',  # L'hôte, ici c'est local
+        'PORT': '5432',  # Port par défaut pour PostgreSQL
+    }
+}
 
 
 
@@ -140,8 +141,8 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.0/howto/static-files/
+MEDIA_URL = '/media/'  # Préfixe URL pour les fichiers média
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 STATIC_URL = 'static/'
 AUTH_USER_MODEL = 'users.User'
