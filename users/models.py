@@ -100,8 +100,10 @@ class User(AbstractBaseUser,PermissionsMixin):
         return moyenne['note__avg'] or 0
 
 
-
-
+class UserEmails(models.Model):
+    email = models.EmailField(null=True, blank=True)
+    otp = models.CharField(max_length=10, null=True, blank=True)
+    otp_created_at = models.DateTimeField(null=True)
 
 
 
