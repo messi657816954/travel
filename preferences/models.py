@@ -26,7 +26,7 @@ class UserPreference(models.Model):
     language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True)
     theme = models.CharField(max_length=10, choices=THEME_CHOICES, default='light')
     communication = models.CharField(max_length=10, choices=COMMUNICATION_CHOICES, default='email')
-    currency = models.ForeignKey(Currency, on_delete=models.CASCADE)
+    currency = models.ForeignKey(Currency, on_delete=models.CASCADE, null=True)
 
     def __str__(self):
         return f"Preferences of {self.user.username}"
