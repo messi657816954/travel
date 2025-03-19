@@ -3,7 +3,8 @@ from .views import RegistrationAPIView, VerifyOTPAPIView, LogoutBlacklistTokenUp
     UserDetailClientView, InitRegistrationAPIView, InitForgotPasswordAPIView, \
     ChangePasswordView, PerformForgotPasswordAPIView, MoyenPaiementListCreateAPIView, MoyenPaiementDetailAPIView, \
     InitierPaiementAPIView, PerformOtpAPIView, InitPhoneOtpAPIView, InitUpdateEmailAPIView, UpdateEmailAPIView, \
-    UpdatePhoneAPIView, InitUpdatePhoneAPIView, UpdateKycStatusAPIView, UpdateProfilePictureAPIView
+    UpdatePhoneAPIView, InitUpdatePhoneAPIView, UpdateProfilePictureAPIView,UpdateKycStatusAPIView
+
 
 # from rest_framework_simplejwt.views import (
 #     TokenObtainPairView,
