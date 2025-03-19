@@ -489,6 +489,20 @@ class UpdateEmailAPIView(APIView):
 
         return Response(res)
 
+class UpdateKycStatusAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, *args, **kwargs):
+        try:
+            user = User.objects.get(pk=request.user.id)
+            user.is_identity_check = True
+            user.save()
+            res = reponses(success=1, results="Identité validé avec succès".encode('utf8'), error_msg='')
+        except ObjectDoesNotExist:
+            res = reponses(success=0, error_msg="Utilisateur introuvable".encode('utf8'))
+
+        return Response(res)
+
 
 
 class InitierPaiementAPIView(APIView):

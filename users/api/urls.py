@@ -3,7 +3,8 @@ from .views import RegistrationAPIView, VerifyOTPAPIView, LogoutBlacklistTokenUp
     UserDetailClientView, InitRegistrationAPIView, InitForgotPasswordAPIView, \
     ChangePasswordView, PerformForgotPasswordAPIView, MoyenPaiementListCreateAPIView, MoyenPaiementDetailAPIView, \
     InitierPaiementAPIView, PerformOtpAPIView, InitPhoneOtpAPIView, InitUpdateEmailAPIView, UpdateEmailAPIView, \
-    UpdatePhoneAPIView, InitUpdatePhoneAPIView, UpdateProfilePictureAPIView
+    UpdatePhoneAPIView, InitUpdatePhoneAPIView, UpdateProfilePictureAPIView,UpdateKycStatusAPIView
+
 
 # from rest_framework_simplejwt.views import (
 #     TokenObtainPairView,
@@ -38,6 +39,7 @@ urlpatterns = [
 
     path('user/update/phone/init', InitUpdatePhoneAPIView.as_view(), name='Init-phone-update'),
     path('user/update/phone', UpdatePhoneAPIView.as_view(), name='phone-update'),
+    path('user/kyc/confirm', UpdateKycStatusAPIView.as_view(), name='kyc-update'),
 
 
 ]
