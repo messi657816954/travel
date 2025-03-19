@@ -29,23 +29,23 @@ from rest_framework.response import Response
 from django.db import transaction
 
 
-def add_email_opt(email, opt):
+def add_email_otp(email, otp):
     email_obj, created = UserEmails.objects.get_or_create(email=email, defaults={
-        'opt': opt,
-        'opt_created_at': datetime.now()
+        'otp': otp,
+        'otp_created_at': datetime.now()
     })
     if not created:
-        email_obj.opt = opt
-        email_obj.opt_created_at = datetime.now()
+        email_obj.otp = otp
+        email_obj.otp_created_at = datetime.now()
         email_obj.save()
 
-def check_email_opt(email, opt):
+def check_email_otp(email, otp):
     obj = UserEmails.objects.filter(email=email).first()
 
-    if not obj or obj.opt != opt:
+    if not obj or obj.otp != otp:
         return False, "Email ou code erroné"
 
-    if timezone.now() - obj.opt_created_at > timedelta(minutes=5):
+    if timezone.now() - obj.otp_created_at > timedelta(minutes=5):
         return False, "Code expiré"
 
     return True, "Ok"
@@ -116,7 +116,7 @@ class RegistrationAPIView(generics.GenericAPIView):
     @transaction.atomic
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        if check_email_opt(request.data["email"], request.data["otp"])[0]:
+        if check_email_otp(request.data["email"], request.data["otp"])[0]:
             data = {}
             if serializer.is_valid(raise_exception=True):
                 user = serializer.save()
@@ -138,7 +138,7 @@ class RegistrationAPIView(generics.GenericAPIView):
                 data['user_payment_method'] = payment_method.data
             res = reponses(success=1, results=data, error_msg='')
         else:
-            res = reponses(success=0, error_msg=check_email_opt(request.data["email"], request.data["otp"])[1])
+            res = reponses(success=0, error_msg=check_email_otp(request.data["email"], request.data["otp"])[1])
         return Response(res)
 
 
@@ -198,7 +198,7 @@ class InitRegistrationAPIView(APIView):
                 'code': code,
                 'client': request.data['email']
             }
-            add_email_opt(request.data['email'], code)
+            add_email_otp(request.data['email'], code)
             message = render_to_string('mail.html', ctx)
             mail = EmailMessage(
                 "Création de votre compte LEJANGUI",
@@ -476,7 +476,7 @@ class InitUpdateEmailAPIView(APIView):
         if not user:
             message = render_to_string('email_update.html', {'code': code})
             object = "Modification adresse mail"
-            add_email_opt(request.data['email'], code)
+            add_email_otp(request.data['email'], code)
             send_email(object, message, request.data['email'])
             res = {
                 'otp': code,
@@ -503,12 +503,12 @@ class UpdateEmailAPIView(APIView):
             new_email = request.data.get('email')
 
             if new_email:
-                if check_email_opt(request.data["email"], request.data["otp"])[0]:
+                if check_email_otp(request.data["email"], request.data["otp"])[0]:
                     user.email = new_email
                     user.save()
                     res = reponses(success=1, results="Email mis à jour avec succès".encode('utf8'), error_msg='')
                 else:
-                    res = reponses(success=0, error_msg=check_email_opt(request.data["email"], request.data["otp"])[1])
+                    res = reponses(success=0, error_msg=check_email_otp(request.data["email"], request.data["otp"])[1])
             else:
                 res = reponses(success=0, error_msg="L'email est requis".encode('utf8'))
 
