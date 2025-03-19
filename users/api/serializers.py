@@ -150,13 +150,14 @@ class ChangePasswordSerializer(serializers.Serializer):
 
 
 class UserDetailSerializer(serializers.ModelSerializer):
+    profile_picture = serializers.ImageField(use_url=True)
 
     moyenne_notes_annonces = serializers.SerializerMethodField()
     moyenne_notes_reservations = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'firstname', 'lastname', 'user_name', 'phone','is_phone_verify','pays','moyenne_notes_annonces','moyenne_notes_reservations']
+        fields = ['id', 'email', 'firstname', 'lastname', 'user_name', 'phone','profile_picture','is_phone_verify','pays','moyenne_notes_annonces','moyenne_notes_reservations']
 
     def get_moyenne_notes_annonces(self, obj):
         """Récupère la moyenne des avis reçus sur les annonces."""

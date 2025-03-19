@@ -1,4 +1,5 @@
 from rest_framework import generics, permissions
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db import transaction
@@ -7,6 +8,7 @@ from django.conf import settings
 from rest_framework import status
 from transactions.models import Transactions
 from transactions.api.serializers import TransactionSerializer
+from users.utils import reponses
 
 
 def get_transaction_title(transaction, user_id):
@@ -29,19 +31,31 @@ def set_description(transaction):
 
     return departure_date + " " + nb_kg + "Kg " + departure + " -> " + destination
 
-class TransactionCreateView(generics.CreateAPIView):
-    queryset = Transactions.objects.all()
-    serializer_class = TransactionSerializer
+class TransactionCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def perform_create(self, serializer):
-        serializer.save()
+    def post(self, request):
+        serializer = TransactionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(reponses(success=1, results={'message': 'Transaction créée avec succès', 'data': serializer.data}))
+        return Response(reponses(success=0, error_msg=str(serializer.errors)))
 
-class TransactionUpdateView(generics.UpdateAPIView):
-    queryset = Transactions.objects.all()
-    serializer_class = TransactionSerializer
+
+class TransactionUpdateView(APIView):
     permission_classes = [IsAuthenticated]
-    lookup_field = 'pk'
+
+    def put(self, request, pk):
+        try:
+            transaction_instance = Transactions.objects.get(pk=pk)
+        except Transactions.DoesNotExist:
+            return Response(reponses(success=0, error_msg='Transaction non trouvée'))
+
+        serializer = TransactionSerializer(transaction_instance, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(reponses(success=1, results={'message': 'Transaction mise à jour avec succès', 'data': serializer.data}))
+        return Response(reponses(success=0, error_msg=str(serializer.errors)))
 
 
 class ListUserTransactionsView(APIView):
@@ -58,12 +72,12 @@ class ListUserTransactionsView(APIView):
                 "name": transaction.state == 'failed' and "Transaction échoué" or get_transaction_title(transaction, user_id),
                 "amount": transaction.sender == user_id and (-1) * transaction.amount or transaction.amount_to_collect,
                 "description": transaction.state == 'failed' and "-" or set_description(transaction),
-                "transport" : transaction.announce.voyage.moyen_transport,
+                "transport": transaction.announce.voyage.moyen_transport,
                 "failed": transaction.state == 'failed'
             }
             for transaction in all_transactions
         ]
-        return Response(data, status=status.HTTP_200_OK)
+        return Response(reponses(success=1, results={'transactions': data}))
 
 
 class ListUserPendingTransactionsView(APIView):
@@ -78,12 +92,12 @@ class ListUserPendingTransactionsView(APIView):
                 "name": get_transaction_title(transaction, user_id),
                 "amount": transaction.amount_to_collect,
                 "description": set_description(transaction),
-                "transport" : transaction.announce.voyage.moyen_transport,
+                "transport": transaction.announce.voyage.moyen_transport,
                 "failed": transaction.state == 'failed'
             }
             for transaction in transactions
         ]
-        return Response(data, status=status.HTTP_200_OK)
+        return Response(reponses(success=1, results={'pending_transactions': data}))
 
 
 class ListUserAccountTransactionsView(APIView):
@@ -100,12 +114,13 @@ class ListUserAccountTransactionsView(APIView):
                 "name": get_transaction_title(transaction, user_id),
                 "amount": transaction.sender == user_id and (-1) * transaction.amount or transaction.amount_to_collect,
                 "description": "-",
-                "transport" : "-",
+                "transport": "-",
                 "failed": transaction.state == 'failed'
             }
             for transaction in all_transactions
         ]
-        return Response(data, status=status.HTTP_200_OK)
+        return Response(reponses(success=1, results={'account_transactions': data}))
+
 
 class UserBalanceAccountView(APIView):
     permission_classes = [IsAuthenticated]
@@ -120,13 +135,10 @@ class UserBalanceAccountView(APIView):
         total_in = sum([transaction.amount_to_collect for transaction in in_transactions])
         total_out = sum([transaction.amount for transaction in out_transactions])
 
-        data = [
-            {
-                "total_pending" : total_pending,
-                "pending_count" : len(pending_transactions),
-                "balance" : total_in - total_out,
-                "forecast" : (total_in + total_pending) - total_out
-            }
-        ]
-
-        return Response(data, status=status.HTTP_200_OK)
+        data = {
+            "total_pending": total_pending,
+            "pending_count": len(pending_transactions),
+            "balance": total_in - total_out,
+            "forecast": (total_in + total_pending) - total_out
+        }
+        return Response(reponses(success=1, results={'balance_info': data}))

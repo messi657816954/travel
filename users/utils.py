@@ -17,7 +17,8 @@ environ.Env.read_env()  # Read .env file
 ACCOUNT_SID = env('TWILIO_ACCOUNT_SID', default='AC2bb830ebf39487cae5db6c5af2ed8b0f')
 AUTH_TOKEN = env('TWILIO_AUTH_TOKEN', default='e2d9dfbafac110a43096310ce9b99675')
 PHONE_NUMBER = env('TWILIO_PHONE_NUMBER', default='0000')
-ENCRYPTION_KEY = env('ENCRYPTION_KEY', default='TaCleSuperSecurisee1234567890=')
+ENCRYPTION_KEY = env('ENCRYPTION_KEY', default='gR8dKj9_mN7pQ2vL5xYcT0wF4uB3eA1iZ6tH8sJ9kO0=')
+# ENCRYPTION_KEY = env('ENCRYPTION_KEY', default='TaCleSuperSecurisee1234567890=')
 
 
 ROLES = (
