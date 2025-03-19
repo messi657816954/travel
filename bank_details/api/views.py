@@ -5,7 +5,9 @@ from django.db import transaction
 import stripe
 from rest_framework import status
 from bank_details.models import BankDetails, PaymentMethods
+from users.utils import STRIPE_API_KEY
 
+stripe.api_key = STRIPE_API_KEY
 
 class ListPaymentMethodsBaseView(APIView):
     permission_classes = [IsAuthenticated]
