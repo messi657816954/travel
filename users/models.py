@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
-from django.db.models import Sum, Case, When, DecimalField, F, Q
+from django.db.models import Sum, Case, When, DecimalField, F, Q, Avg
 
 from commons.models import Pays
 
@@ -72,7 +72,7 @@ class User(AbstractBaseUser,PermissionsMixin):
     def __str__(self):
         return self.user_name
 
-    def moyenne_notes_recues(self, type_avis=None):
+    def moyenne_notes_recues(self):
         """
         Calcule la moyenne des notes reçues par l'utilisateur.
 
@@ -83,16 +83,9 @@ class User(AbstractBaseUser,PermissionsMixin):
         Returns:
             float: La moyenne des notes, ou 0 si aucun avis.
         """
-        from django.db.models import Avg
 
         # Requête de base pour tous les avis reçus par l'utilisateur
         query = self.avis_recus
-
-        # Filtrage optionnel par type d'avis
-        if type_avis == 'annonce':
-            query = query.filter(annonce__isnull=False)
-        elif type_avis == 'reservation':
-            query = query.filter(reservation__isnull=False)
 
         # Calcul de la moyenne
         moyenne = query.aggregate(Avg('note'))
