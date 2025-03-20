@@ -433,7 +433,7 @@ class UtilisateurAvisView(APIView):
     def get(self, request):
         try:
             # Récupérer le utilisateur_id depuis les query parameters (noter le nom du paramètre)
-            utilisateur_id = request.query_params.get('uid', None)
+            utilisateur_id = request.query_params.get('uuid', None)
 
             if utilisateur_id is None:
                 return Response(

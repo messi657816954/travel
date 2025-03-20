@@ -3,10 +3,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db import transaction
-import stripe
+import stripe, requests
 from django.conf import settings
 from rest_framework import status
 from transactions.models import Transactions
+from commons.models import Currency
+from annonces.models import Reservation
 from transactions.api.serializers import TransactionSerializer
 from users.utils import reponses
 
@@ -31,15 +33,40 @@ def set_description(transaction):
 
     return departure_date + " " + nb_kg + "Kg " + departure + " -> " + destination
 
+
+def create_transactions(amount, currency, type, external_id, state, sender=None, beneficiary=None, reservation=None):
+    transaction = Reservation.objects.create(
+        type = type,
+        state = state,
+        amount = amount,
+        amount_to_collect = amount,
+        currency = currency,
+        announce = reservation and reservation.annonce,
+        reservation = reservation,
+        sender = sender,
+        beneficiary = beneficiary,
+        external_id = external_id
+    )
+    return transaction
+
 class TransactionCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        serializer = TransactionSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(reponses(success=1, results={'message': 'Transaction créée avec succès', 'data': serializer.data}))
-        return Response(reponses(success=0, error_msg=str(serializer.errors)))
+        amount = request.data["amount"]
+        currency_id = request.data["currency"]
+        reservation_id = request.data["reservation"]
+        try:
+            currency = Currency.objects.get(pk=currency_id)
+        except requests.exceptions.RequestException as e:
+            return Response(reponses(success=0, error_msg='Currency not found'))
+        try:
+            reservation = Reservation.objects.get(pk=reservation_id)
+        except requests.exceptions.RequestException as e:
+            return Response(reponses(success=0, error_msg='Reservation not found'))
+        transaction = create_transactions(amount, currency, "transfer", request.data["external_id"], "pending", request.user, reservation.annonce.user_id, reservation)
+
+        return Response(reponses(success=1, results={'message': 'Transaction créée avec succès', 'data': transaction}))
 
 
 class TransactionUpdateView(APIView):

@@ -3,6 +3,7 @@ from commons.models import Currency
 from annonces.models import Annonce, Reservation
 from django.db import models
 from django.core.validators import MinValueValidator
+import uuid
 
 TRANSACTIONS_STATE = [
     ('failed', 'Failed'),
@@ -23,9 +24,10 @@ TRANSACTIONS_TYPE = [
 
 
 class Transactions(models.Model):
-    ref = models.CharField(max_length=255, unique=True)  # Ajout de max_length
+    ref = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     type = models.CharField(max_length=20, choices=TRANSACTIONS_TYPE)  # Ajout de max_length
     state = models.CharField(max_length=20, choices=TRANSACTIONS_STATE)  # Ajout de max_length
+    externa_id = models.CharField(max_length=255, null=True, blank=True)
     amount = models.DecimalField(
         max_digits=12,
         decimal_places=2,
