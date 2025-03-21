@@ -156,13 +156,13 @@ class UpdateUserView(generics.UpdateAPIView):
         data = {key: value for key, value in request.data.items() if key in allowed_fields}
 
         if not data:
-            return Response({"error": "Aucun champ valide à mettre à jour"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(reponses(success=0, error_msg="Aucun champ valide à mettre à jour"), status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.get_serializer(user, data=data, partial=True)
 
         if serializer.is_valid():
             serializer.save()
-            return Response({"message": "Mise à jour réussie", "user": serializer.data}, status=status.HTTP_200_OK)
+            return Response(reponses(success=1, results=serializer.data), status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
