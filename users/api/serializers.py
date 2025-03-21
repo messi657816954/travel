@@ -59,8 +59,6 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         return data
 
-
-
 class RegistrationSerializer(serializers.ModelSerializer):
     # password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
     pays_details = PaysSerializer(source='pays', read_only=True)
@@ -87,6 +85,20 @@ class RegistrationSerializer(serializers.ModelSerializer):
         user.pays=pays
         user.save()
         return user
+
+class UpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['lastname', 'firstname', 'address', 'city', 'zip_code']
+
+    def update(self, instance, validated_data):
+        instance.lastname = validated_data.get('lastname', instance.lastname)
+        instance.firstname = validated_data.get('firstname', instance.firstname)
+        instance.address = validated_data.get('address', instance.address)
+        instance.city = validated_data.get('city', instance.city)
+        instance.zip_code = validated_data.get('zip_code', instance.zip_code)
+        instance.save()
+        return instance
                     
 class VerifyOTPSerializer(serializers.Serializer):
 
