@@ -59,50 +59,6 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         return data
 
-#
-# class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
-#
-#     @classmethod
-#     def get_token(cls, user):
-#         token = super().get_token(user)
-#         return token
-#
-#     def validate(self, attrs):
-#         # Validez les données et obtenez les tokens
-#         data = super().validate(attrs)
-#
-#         # Ajoutez les informations de l'utilisateur à la réponse
-#         user = self.user
-#         cpte = Compte.objects.get(user=user)
-#         moyens = MoyenPaiementUser.objects.filter(user=user)
-#         pays = Pays.objects.filter(id=user.pays.id)
-#         data['user'] = {
-#             'id': user.id,
-#             'user_name': user.user_name,
-#             'firstname': user.firstname,
-#             'lastname': user.lastname,
-#             'email': user.email,
-#             'phone': user.phone,
-#             'pays': PaysSerializer(pays, many=True).data,
-#             # Ajoutez d'autres champs de l'utilisateur si nécessaire
-#         }
-#         data['compte'] = {
-#             'id': cpte.id,
-#             'virtual_balance': cpte.virtual_balance,
-#             'real_balance': cpte.real_balance,
-#             # Ajoutez d'autres champs de l'utilisateur si nécessaire
-#         }
-#         data['infos_methode_paiement'] = MoyenPaiementSerializer(moyens, many=True).data
-#
-#         return data
-#
-#     # @classmethod
-#     # def get_token(cls, user):
-#     #     token = super().get_token(user)
-#     #     return token
-#
-
-
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -110,7 +66,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
     pays_details = PaysSerializer(source='pays', read_only=True)
     class Meta:
         model = User
-        fields =  ['email','firstname','lastname', 'user_name','phone', 'password', 'otp', 'pays_details', 'pays', 'profile_picture']
+        fields =  ['email','firstname','lastname', 'user_name','phone', 'password', 'otp', 'pays_details', 'address', 'city', 'zip_code', 'pays', 'profile_picture']
         extra_kwargs = {
             'password': {'write_only': True}
         }
@@ -122,6 +78,9 @@ class RegistrationSerializer(serializers.ModelSerializer):
                     user_name=self.validated_data['user_name'],
                     is_active=True,
                     phone=self.validated_data['phone'],
+                    address=self.validated_data['address'],
+                    city=self.validated_data['city'],
+                    zip_code=self.validated_data['zip_code'],
                     profile_picture=self.validated_data.get('profile_picture', None)
                     )
         user.set_password(self.validated_data['password'],)
@@ -169,24 +128,3 @@ class MoyenPaiementSerializer(serializers.ModelSerializer):
     class Meta:
         model = MoyenPaiementUser
         fields = '__all__'
-
-
-
-
-
-
-
-# class CustomTokenRefreshViewSerializer(TokenRefreshView):
-#     def validate(self, attrs):
-#         # The default result (access/refresh tokens)
-#         data = super(CustomTokenRefreshViewSerializer, self).validate(attrs)
-#         # Custom data you want to include
-#         data.update({'user': self.user.username})
-#         data.update({'id': self.user.id})
-#         # and everything else you want to send in the response
-#         return data
-
-# class LoginTokenGenerationSerializer(serializers.Serializer):
-#     email = serializers.EmailField()
-#     password = serializers.CharField()
-    

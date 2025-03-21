@@ -142,6 +142,31 @@ class RegistrationAPIView(generics.GenericAPIView):
         return Response(res)
 
 
+class UpdateUserView(generics.UpdateAPIView):
+    serializer_class = RegistrationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        return get_object_or_404(User, id=self.request.user.id)
+
+    def update(self, request, *args, **kwargs):
+        user = self.get_object()
+        allowed_fields = {'lastname', 'firstname', 'address', 'city', 'zip_code'}
+
+        data = {key: value for key, value in request.data.items() if key in allowed_fields}
+
+        if not data:
+            return Response({"error": "Aucun champ valide à mettre à jour"}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = self.get_serializer(user, data=data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Mise à jour réussie", "user": serializer.data}, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 class VerifyOTPAPIView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
@@ -150,7 +175,7 @@ class VerifyOTPAPIView(generics.GenericAPIView):
             email = serializer.data['email']
             otp = serializer.data['otp']
             user_obj = User.objects.get(email=email)
-            
+
             if user_obj.otp == otp:
                 user_obj.is_staff = True
                 user_obj.save()
@@ -211,48 +236,6 @@ class InitRegistrationAPIView(APIView):
 
             res = reponses(success=1, results=data_response, error_msg='')
             return Response(res)
-
-
-
-# class PerformRegistrationAPIView(APIView):
-#     permission_classes = (AllowAny,)
-#     serializer_class = RegistrationSerializer
-#
-#     @transaction.atomic
-#     def post(self, request, *args, **kwargs):
-#         print("--------1----data : ",request.data)
-#         data_query = {
-#             'email': request.data['email'],
-#             'user_name': request.data['user_name'],
-#             'firstname': request.data['firstname'],
-#             'lastname': request.data['lastname'],
-#             # 'otp': request.data['otp'],
-#             'password': request.data['password']
-#         }
-#         serializer = RegistrationSerializer(data=data_query)
-#         if serializer.is_valid(raise_exception=True):
-#             print("-------2-----data : ",request.data)
-#             user = serializer.save()
-#             cpte = Compte.objects.create(
-#                 virtual_balance=0,
-#                 real_balance=0,
-#                 incoming_amount=0,
-#                 user=user  # Utilisation de l'instance utilisateur
-#             )
-#             compte_serializer = CompteSerializer(cpte)
-#
-#             # Préparation des données de réponse
-#             refresh = RefreshToken.for_user(user=user)
-#             response_data = {
-#                 **serializer.data,  # Données de l'utilisateur
-#                 'access': str(refresh.access_token),  # Données du compte
-#                 'refresh': str(refresh),  # Données du compte
-#                 # 'compte': compte_serializer.data  # Données du compte
-#             }
-#             res = reponses(success=1, results=data_query, error_msg='')
-#             return Response(res)
-#         res = reponses(success=0, error_msg=serializer.errors)
-#         return Response(res)
 
 
 
