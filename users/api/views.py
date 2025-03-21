@@ -5,7 +5,7 @@ from rest_framework.generics import UpdateAPIView, DestroyAPIView
 
 from annonces.models import Reservation
 from .serializers import RegistrationSerializer, VerifyOTPSerializer, MyTokenObtainPairSerializer, \
-    ChangePasswordSerializer, UserDetailSerializer, CompteSerializer, MoyenPaiementSerializer
+    ChangePasswordSerializer, UserDetailSerializer, CompteSerializer, MoyenPaiementSerializer, UpdateSerializer
 from rest_framework import generics,status
 from rest_framework.views import APIView
 from rest_framework.permissions import *
