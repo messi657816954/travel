@@ -125,14 +125,19 @@ class UserDetailSerializer(serializers.ModelSerializer):
     pays_details = PaysSerializer(source='pays', read_only=True)
 
     moyenne_notes = serializers.SerializerMethodField()
+    avis_count = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'firstname', 'lastname', 'user_name', 'phone', 'address', 'city', 'zip_code', 'profile_picture', 'is_phone_verify', 'pays_details', 'moyenne_notes']
+        fields = ['id', 'email', 'firstname', 'lastname', 'user_name', 'phone', 'address', 'city', 'zip_code', 'profile_picture', 'is_phone_verify', 'pays_details', 'moyenne_notes', 'avis_count']
 
     def get_moyenne_notes(self, obj):
         """Récupère la moyenne des avis reçus."""
-        return obj.moyenne_notes_recues()
+        return obj.stats_notes_recues()['moyenne']
+
+    def get_avis_count(self, obj):
+        """Récupère le nombre d'avis reçus."""
+        return obj.stats_notes_recues()['nombre_avis']
 
 
 

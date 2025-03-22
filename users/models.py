@@ -72,26 +72,20 @@ class User(AbstractBaseUser,PermissionsMixin):
     def __str__(self):
         return self.user_name
 
-    def moyenne_notes_recues(self):
+    def stats_notes_recues(self):
         """
-        Calcule la moyenne des notes reçues par l'utilisateur.
-
-        Args:
-            type_avis (str, optional): Type d'avis à filtrer ('annonce' ou 'reservation').
-                                       Si None, tous les avis sont pris en compte.
-
+        Calcule la moyenne des notes reçues et le nombre d'avis pour l'utilisateur.
         Returns:
-            float: La moyenne des notes, ou 0 si aucun avis.
+            dict: Contient `moyenne` et `nombre_avis`.
         """
-
-        # Requête de base pour tous les avis reçus par l'utilisateur
-        query = self.avis_recus
-
-        # Calcul de la moyenne
-        moyenne = query.aggregate(Avg('note'))
-
-        # Retourne la moyenne ou 0 si aucun avis
-        return moyenne['note__avg'] or 0
+        stats = self.avis_recus.aggregate(
+            moyenne=Avg('note'),
+            nombre_avis=Count('id')
+        )
+        return {
+            "moyenne": stats.get('moyenne', 0) or 0,
+            "nombre_avis": stats.get('nombre_avis', 0)
+        }
 
 
 class UserEmails(models.Model):
