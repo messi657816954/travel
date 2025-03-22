@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
-from django.db.models import Sum, Case, When, DecimalField, F, Q, Avg
+from django.db.models import Sum, Case, When, DecimalField, F, Q, Avg, Count
 
 from commons.models import Pays
 
