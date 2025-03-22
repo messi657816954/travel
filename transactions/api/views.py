@@ -12,6 +12,7 @@ from annonces.models import Reservation
 from transactions.api.serializers import TransactionSerializer
 from users.utils import reponses
 
+SPRING_BOOT_UPDATE_PAYMENT_URL = "http://localhost:8080/api/payments"
 
 def get_transaction_title(transaction, user_id):
     title = ""
@@ -49,6 +50,15 @@ def create_transactions(amount, currency, type, external_id, state, sender=None,
     )
     return transaction
 
+def create_refund_transactions(transaction_id, amount, external_id):
+    transaction_obj = Transactions.objects.get(pk=transaction_id)
+    transaction_obj.pk = None
+    transaction_obj.type = 'refund'
+    transaction_obj.amount = amount
+    transaction_obj.state = 'completed'
+    transaction_obj.external_id = external_id
+    return transaction_obj.save()
+
 class TransactionCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -65,6 +75,14 @@ class TransactionCreateView(APIView):
         except requests.exceptions.RequestException as e:
             return Response(reponses(success=0, error_msg='Reservation not found'))
         transaction = create_transactions(amount, currency, "transfer", request.data["external_id"], "pending", request.user, reservation.annonce.user_id, reservation)
+        try:
+            params = {
+                "processingId": request.data["external_id"],
+                "transactionId": transaction.ref
+            }
+            response = requests.post(SPRING_BOOT_UPDATE_PAYMENT_URL, params=params, timeout=10)
+        except requests.exceptions.RequestException:
+            return Response(reponses(success=0, error_msg='Erreur de communication avec le service de paiement'), status=500)
 
         return Response(reponses(success=1, results={'message': 'Transaction créée avec succès', 'data': transaction}))
 

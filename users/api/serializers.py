@@ -64,7 +64,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
     pays_details = PaysSerializer(source='pays', read_only=True)
     class Meta:
         model = User
-        fields =  ['email','firstname','lastname', 'user_name','phone', 'password', 'otp', 'pays_details', 'address', 'city', 'zip_code', 'pays', 'profile_picture']
+        fields =  ['email','firstname','lastname', 'user_name','phone', 'password', 'pays_details', 'address', 'city', 'zip_code', 'pays', 'profile_picture']
         extra_kwargs = {
             'password': {'write_only': True}
         }
@@ -122,12 +122,13 @@ class ChangePasswordSerializer(serializers.Serializer):
 
 class UserDetailSerializer(serializers.ModelSerializer):
     profile_picture = serializers.ImageField(use_url=True)
+    pays_details = PaysSerializer(source='pays', read_only=True)
 
     moyenne_notes = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'firstname', 'lastname', 'user_name', 'phone','profile_picture','is_phone_verify','pays','moyenne_notes']
+        fields = ['id', 'email', 'firstname', 'lastname', 'user_name', 'phone', 'address', 'city', 'zip_code', 'profile_picture', 'is_phone_verify', 'pays_details', 'moyenne_notes']
 
     def get_moyenne_notes(self, obj):
         """Récupère la moyenne des avis reçus."""

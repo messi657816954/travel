@@ -264,37 +264,13 @@ class CancelReservationByAnnonceurAPIView(APIView):
             reservation = Reservation.objects.get(id=request.query_params['reservation_id'])
             annonce = Annonce.objects.get(id=reservation.annonce.pk)
 
-            # Annuler la réservation et ajuster les kg disponibles
-            reservation.statut = 'CANCEL'
-            reservation.save()
-            annonce.nombre_kg_dispo += reservation.nombre_kg
-            annonce.save()
-
-            # Gestion des transactions
-            user_compte = Compte.objects.get(user=request.user)
-            reservation_compte = Compte.objects.get(user=reservation.user)
-            transaction_debit = Transaction.objects.get(compte=reservation_compte, reservation=reservation, transaction_type="DEBIT")
-            transaction_credit = Transaction.objects.get(compte=user_compte, reservation=reservation, transaction_type="CREDIT")
-            transaction_debit.transaction_status = "CANCEL"
-            transaction_credit.transaction_status = "CANCEL"
-            transaction_debit.save()
-            transaction_credit.save()
-            user_compte.calculate_balances()
-            reservation_compte.calculate_balances()
 
             # Gestion conditionnelle selon le statut initial de la réservation
             ctx = {'reservation_ref': reservation.reference}
             if reservation.statut in ['CONFIRM', 'RECEPTION', 'DELIVRATE']:  # Réservation confirmée
                 # Ajout des frais
-                frais = Decimal('5.00')  # Exemple, à ajuster selon vos besoins
-                Transaction.objects.create(
-                    montant=frais,
-                    compte=reservation_compte,
-                    transaction_type="DEBIT",
-                    transaction_status="SUCCESSFUL",
-                    reservation=reservation
-                )
-                reservation_compte.calculate_balances()
+                fees = Decimal('5.00')  # Exemple, à ajuster selon vos besoins
+                amount = reservation.montant - fees
 
                 # Notifications au client et à l'annonceur
                 notify_user(
@@ -320,6 +296,12 @@ class CancelReservationByAnnonceurAPIView(APIView):
                     context=ctx,
                     plain_message=f"Votre réservation {reservation.reference} a été annulée."
                 )
+
+            # Annuler la réservation et ajuster les kg disponibles
+            reservation.statut = 'CANCEL'
+            reservation.save()
+            annonce.nombre_kg_dispo += reservation.nombre_kg
+            annonce.save()
 
             return Response(reponses(success=1, results={'message': 'Réservation annulée avec succès'}))
         except Reservation.DoesNotExist:

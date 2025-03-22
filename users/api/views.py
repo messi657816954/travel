@@ -345,17 +345,14 @@ class UserDetailClientView(APIView):
             data_serializer = self.serializer_class(user_obj)
             cpte = Compte.objects.get(user=request.user)
             compte_serializer = CompteSerializer(cpte)
-            moyens = MoyenPaiementUser.objects.filter(user=request.user)
-            type_paiement_serializer = MoyenPaiementSerializer(moyens, many=True)
             response_data = {
                 **data_serializer.data,  # Données de l'utilisateur
-                'compte': compte_serializer.data,  # Données du compte
-                'type_paiement': type_paiement_serializer.data  # Données du compte
+                'compte': compte_serializer.data,
             }
             res = reponses(success=1, results=response_data)
             return Response(res)
         except User.DoesNotExist:
-            res = reponses(success=0, error_msg="Cet utilisateur n'est pas un UTILISATEUR")
+            res = reponses(success=0, error_msg="Not user found")
             return Response(res)
 
     def get_object(self):
