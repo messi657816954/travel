@@ -84,7 +84,8 @@ class TransactionCreateView(APIView):
         except requests.exceptions.RequestException:
             return Response(reponses(success=0, error_msg='Erreur de communication avec le service de paiement'), status=500)
 
-        return Response(reponses(success=1, results={'message': 'Transaction créée avec succès', 'data': transaction}))
+        serializer = TransactionSerializer(transaction)
+        return Response(reponses(success=1, results={'message': 'Transaction créée avec succès', 'data': serializer.data}))
 
 
 class TransactionUpdateView(APIView):
