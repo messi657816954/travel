@@ -311,7 +311,7 @@ class AnnonceDetailAPIView(APIView):
 
 
 
-async def send_email_async(subject, message, [recipient_email]):
+async def send_email_async(subject, message, recipient_email):
     mail = EmailMessage(
         subject,
         message,
