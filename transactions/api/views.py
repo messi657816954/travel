@@ -67,8 +67,7 @@ class TransactionCreateView(APIView):
         amount = request.data["amount"]
         reservation_id = request.data["reservation"]
         user_pref = UserPreference.objects.filter(user_id=request.user.id).first()
-        currency = Currency.objects.get(code='EUR')
-        currency_code = user_pref and user_pref.currency or currency
+        currency = user_pref and user_pref.currency or Currency.objects.get(code='EUR')
         try:
             reservation = Reservation.objects.get(pk=reservation_id)
         except requests.exceptions.RequestException as e:
