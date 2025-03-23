@@ -10,9 +10,7 @@ from transactions.models import Transactions
 from commons.models import Currency
 from annonces.models import Reservation
 from transactions.api.serializers import TransactionSerializer
-from users.utils import reponses
-
-SPRING_BOOT_UPDATE_PAYMENT_URL = "http://localhost:8080/api/payments"
+from users.utils import reponses, SPRING_BOOT_UPDATE_PAYMENT_URL
 
 def get_transaction_title(transaction, user_id):
     title = ""
@@ -34,8 +32,7 @@ def set_description(transaction):
 
     return departure_date + " " + nb_kg + "Kg " + departure + " -> " + destination
 
-
-def create_transactions(amount, currency, type, external_id, state, sender=None, beneficiary=None, reservation=None):
+def create_transactions(amount, currency, type, state, external_id=None, sender=None, beneficiary=None, reservation=None):
     transaction = Reservation.objects.create(
         type = type,
         state = state,
@@ -53,6 +50,8 @@ def create_transactions(amount, currency, type, external_id, state, sender=None,
 def create_refund_transactions(transaction_id, amount, external_id):
     transaction_obj = Transactions.objects.get(pk=transaction_id)
     transaction_obj.pk = None
+    transaction_obj.beneficiary = transaction_obj.sender
+    transaction_obj.sender = None
     transaction_obj.type = 'refund'
     transaction_obj.amount = amount
     transaction_obj.state = 'completed'
@@ -74,7 +73,7 @@ class TransactionCreateView(APIView):
             reservation = Reservation.objects.get(pk=reservation_id)
         except requests.exceptions.RequestException as e:
             return Response(reponses(success=0, error_msg='Reservation not found'))
-        transaction = create_transactions(amount, currency, "transfer", request.data["external_id"], "pending", request.user, reservation.annonce.user_id, reservation)
+        transaction = create_transactions(amount, currency, "transfer", "pending", request.data["external_id"], request.user, reservation.annonce.user_id, reservation)
         try:
             params = {
                 "processingId": request.data["external_id"],

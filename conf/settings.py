@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'preferences',
     'bank_details',
     'transactions',
+    'payments',
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
 ]

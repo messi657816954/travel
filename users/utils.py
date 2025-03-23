@@ -19,6 +19,9 @@ AUTH_TOKEN = env('TWILIO_AUTH_TOKEN', default='e2d9dfbafac110a43096310ce9b99675'
 PHONE_NUMBER = env('TWILIO_PHONE_NUMBER', default='0000')
 ENCRYPTION_KEY = env('ENCRYPTION_KEY', default='gR8dKj9_mN7pQ2vL5xYcT0wF4uB3eA1iZ6tH8sJ9kO0=')
 STRIPE_API_KEY = env('STRIPE_API_KEY', default='TaCleSuperSecurisee1234567890=')
+SPRING_BOOT_PAYMENT_URL = env('SPRING_BOOT_PAYMENT_URL', default='http://localhost:8084/api/payment/create-payment-intent')
+SPRING_BOOT_UPDATE_PAYMENT_URL = env('SPRING_BOOT_UPDATE_PAYMENT_URL', default='http://localhost:8084/api/payment/confirm-payment')
+SPRING_BOOT_REFUND_PAYMENT_URL = env('SPRING_BOOT_REFUND_PAYMENT_URL', default='http://localhost:8084/api/payment/refund-payment')
 
 
 ROLES = (

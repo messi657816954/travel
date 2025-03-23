@@ -203,7 +203,7 @@ class ConfirmerLivraisonAPIView(APIView):
                 'reservation_ref': reservation.reference
             }
             message = render_to_string('confirm_livraison_colis.html', ctx)
-            send_email_async("Livraison du colis", message, reservation.user.email)
+            send_email_async("Livraison du colis", message, [reservation.user.email])
 
             return Response(reponses(success=1, results={'message': 'Livraison confirmée avec succès'}))
 
@@ -311,12 +311,12 @@ class AnnonceDetailAPIView(APIView):
 
 
 
-async def send_email_async(subject, message, recipient_email):
+async def send_email_async(subject, message, [recipient_email]):
     mail = EmailMessage(
         subject,
         message,
         settings.EMAIL_HOST_USER,
-        [recipient_email],
+        recipient_email,
     )
     mail.content_subtype = "html"
     mail.send(fail_silently=True)

@@ -6,9 +6,8 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from commons.models import Currency
 from annonces.models import Reservation
-from users.utils import reponses
+from users.utils import reponses, SPRING_BOOT_PAYMENT_URL
 
-SPRING_BOOT_PAYMENT_URL = "http://localhost:8080/api/payments"
 
 class InitiatePaymentView(APIView):
     permission_classes = [IsAuthenticated]

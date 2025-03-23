@@ -41,6 +41,7 @@ class Transactions(models.Model):
         validators=[MinValueValidator(0.00)]  # Permet 0 pour amount_to_collect
     )
     currency = models.ForeignKey(Currency, on_delete=models.CASCADE)
+    currency_to_collect = models.ForeignKey(Currency, on_delete=models.CASCADE)
     announce = models.ForeignKey(
         Annonce,
         on_delete=models.CASCADE,

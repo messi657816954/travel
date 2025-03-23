@@ -13,5 +13,6 @@ urlpatterns = [
     path('ws/api/v1/preference/', include('preferences.api.urls')),
     path('ws/api/v1/', include('bank_details.api.urls')),
     path('ws/api/v1/account/', include('transactions.api.urls')),
+    path('ws/api/v1/payment/', include('payments.api.urls')),
     
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
