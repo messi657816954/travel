@@ -6,6 +6,8 @@ from django.db import transaction
 import stripe, requests, datetime
 from django.conf import settings
 from rest_framework import status
+
+from preferences.models import UserPreference
 from transactions.models import Transactions
 from commons.models import Currency
 from annonces.models import Reservation
@@ -63,12 +65,10 @@ class TransactionCreateView(APIView):
 
     def post(self, request):
         amount = request.data["amount"]
-        currency_id = request.data["currency"]
         reservation_id = request.data["reservation"]
-        try:
-            currency = Currency.objects.get(pk=currency_id)
-        except requests.exceptions.RequestException as e:
-            return Response(reponses(success=0, error_msg='Currency not found'))
+        user_pref = UserPreference.objects.filter(user_id=request.user.id).first()
+        currency = Currency.objects.get(code='EUR')
+        currency_code = user_pref and user_pref.currency or currency
         try:
             reservation = Reservation.objects.get(pk=reservation_id)
         except requests.exceptions.RequestException as e:
