@@ -35,7 +35,7 @@ def set_description(transaction):
     return departure_date + " " + nb_kg + "Kg " + departure + " -> " + destination
 
 def create_transactions(amount, currency, type, state, external_id=None, sender=None, beneficiary=None, reservation=None):
-    transaction = Reservation.objects.create(
+    transaction = Transactions.objects.create(
         type = type,
         state = state,
         amount = amount,
