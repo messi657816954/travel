@@ -29,7 +29,6 @@ class VoyageSerializer(serializers.ModelSerializer):
 
 
 class AnnonceSerializer(serializers.ModelSerializer):
-    voyage_details = VoyageSerializer(source='voyage', read_only=True)
     user_details = UserDetailSerializer(source='user_id', read_only=True)
 
     class Meta:
@@ -37,7 +36,7 @@ class AnnonceSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'date_publication',
             'nombre_kg_dispo', 'montant_par_kg', 'cout_total',
-            'active', 'reference', 'voyage_details', 'user_details','nombre_kg'
+            'active', 'reference', 'voyage', 'user_details', 'user_id','nombre_kg'
         ]
         #read_only_fields = ('date_publication', 'commission','published',
          #                 'revenue_transporteur', 'reference')
