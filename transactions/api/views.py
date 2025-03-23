@@ -3,7 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db import transaction
-import stripe, requests
+import stripe, requests, datetime
 from django.conf import settings
 from rest_framework import status
 from transactions.models import Transactions
@@ -74,6 +74,8 @@ class TransactionCreateView(APIView):
         except requests.exceptions.RequestException as e:
             return Response(reponses(success=0, error_msg='Reservation not found'))
         transaction = create_transactions(amount, currency, "transfer", "pending", request.data["external_id"], request.user, reservation.annonce.user_id, reservation)
+        reservation.date_paiement = datetime.datetime.now()
+        reservation.save()
         try:
             params = {
                 "processingId": request.data["external_id"],
