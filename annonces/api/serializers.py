@@ -37,7 +37,7 @@ class AnnonceSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'date_publication',
             'nombre_kg_dispo', 'montant_par_kg', 'cout_total',
-            'active', 'reference', 'voyage', 'user_id','nombre_kg'
+            'active', 'reference', 'voyage_details', 'user_details','nombre_kg'
         ]
         #read_only_fields = ('date_publication', 'commission','published',
          #                 'revenue_transporteur', 'reference')
