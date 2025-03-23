@@ -26,72 +26,62 @@ class CreateAnnonceAPIView(APIView):
 
     @transaction.atomic
     def post(self, request, *args, **kwargs):
-        # try:
-            # 1. Créer d'abord le voyage
-            voyage_data = {
-                'date_depart': request.data['date_depart'],
-                'provenance': request.data['provenance'],
-                'destination': request.data['destination'],
-                'agence_voyage': request.data.get('agence_voyage', ''),
-                'code_reservation': request.data.get('code_reservation', ''),
-                'moyen_transport': request.data.get('moyen_transport', '')
-            }
 
-            voyage_serializer = VoyageSerializer(data=voyage_data)
-            if not voyage_serializer.is_valid():
-                return Response(reponses(
-                    success=0,
-                    error_msg='Données de voyage invalides: ' + str(voyage_serializer.errors)
-                ))
+        if not request.user.is_phone_verify or not request.user.is_identity_check:
+            return Response(reponses(
+                success=0,
+                error_msg='This action is only available to users who have verified their phone number and identity.'
+            ))
 
-            voyage = voyage_serializer.save()
+        voyage_data = {
+            'date_depart': request.data['date_depart'],
+            'provenance': request.data['provenance'],
+            'destination': request.data['destination'],
+            'agence_voyage': request.data.get('agence_voyage', ''),
+            'code_reservation': request.data.get('code_reservation', ''),
+            'moyen_transport': request.data.get('moyen_transport', '')
+        }
 
-            # 2. Créer ensuite l'annonce
-            montant_par_kg = Decimal(request.data['montant_par_kg'])
-            nombre_kg = Decimal(request.data['nombre_kg_dispo'])
-            nombre_kg_dispo = Decimal(request.data['nombre_kg_dispo'])
-            cout_total = montant_par_kg * nombre_kg
+        voyage_serializer = VoyageSerializer(data=voyage_data)
+        if not voyage_serializer.is_valid():
+            return Response(reponses(
+                success=0,
+                error_msg='Données de voyage invalides: ' + str(voyage_serializer.errors)
+            ))
 
-            annonce_data = {
-                'published': False,
-                # 'type_bagage_auto': request.data['type_bagage_auto'],
-                'nombre_kg_dispo': nombre_kg_dispo,
-                'nombre_kg': nombre_kg,
-                'montant_par_kg': montant_par_kg,
-                'cout_total': cout_total,
-                'reference': generate_reference(),
-                'voyage': voyage.id,
-                'user_id': request.user.id
-            }
+        voyage = voyage_serializer.save()
 
-            annonce_serializer = AnnonceSerializer(data=annonce_data)
-            print("############### :", annonce_data)
-            if not annonce_serializer.is_valid():
-                print("====== :",annonce_serializer.errors)
-                return Response(reponses(
-                    success=0,
-                    error_msg='Données d\'annonce invalides: '+ str(annonce_serializer.errors),
-                ))
+        # 2. Créer ensuite l'annonce
+        montant_par_kg = Decimal(request.data['montant_par_kg'])
+        nombre_kg = Decimal(request.data['nombre_kg_dispo'])
+        nombre_kg_dispo = Decimal(request.data['nombre_kg_dispo'])
+        cout_total = montant_par_kg * nombre_kg
 
-            annonce = annonce_serializer.save()
-            # list_id_bagage_auto = list()
-            # for rec in request.data['list_bagage']:
-            #     bagage = TypeBagage.objects.get(pk=rec)
-            #     list_id_bagage_auto.append(TypeBagageAnnonce(type_bagage=bagage,annonce=annonce))
-            #
-            # TypeBagageAnnonce.objects.bulk_create(list_id_bagage_auto)
-            # # 3. Préparer la réponse avec les données combinées
-            # list_bagage_auto = TypeBagage.objects.filter(id__in=request.data['list_bagage'])
-            response_data = {
-                **annonce_serializer.data,
-                # 'voyage': voyage_serializer.data,
-                #'bagage_auto': TypeBagageSerializer(list_bagage_auto,many=True).data,
-            }
+        annonce_data = {
+            'published': False,
+            'nombre_kg_dispo': nombre_kg_dispo,
+            'nombre_kg': nombre_kg,
+            'montant_par_kg': montant_par_kg,
+            'cout_total': cout_total,
+            'reference': generate_reference(),
+            'voyage': voyage.id,
+            'user_id': request.user.id
+        }
 
-            return Response(reponses(success=1, results=response_data))
+        annonce_serializer = AnnonceSerializer(data=annonce_data)
+        if not annonce_serializer.is_valid():
+            return Response(reponses(
+                success=0,
+                error_msg='Données d\'annonce invalides: '+ str(annonce_serializer.errors),
+            ))
 
-        # except Exception as e:
-        #     return Response(reponses(success=0, error_msg=str(e)))
+        annonce = annonce_serializer.save()
+        response_data = {
+            **annonce_serializer.data,
+            'voyage': voyage_serializer.data,
+        }
+
+        return Response(reponses(success=1, results=response_data))
 
 
 
