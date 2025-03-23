@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from commons.models import Currency
 from annonces.models import Reservation
 from users.utils import reponses, SPRING_BOOT_PAYMENT_URL
+from preferences.models import UserPreference
 
 
 class InitiatePaymentView(APIView):
@@ -14,14 +15,10 @@ class InitiatePaymentView(APIView):
 
     def post(self, request):
         amount = request.data.get("amount")
-        currency_id = request.data.get("currency")
         reservation_id = request.data.get("reservation")
         payment_method = request.data.get("payment_method")
-
-        try:
-            currency = Currency.objects.get(pk=currency_id)
-        except Currency.DoesNotExist:
-            return Response(reponses(success=0, error_msg='Currency not found'), status=404)
+        user_pref = UserPreference.objects.filter(user_id=request.user.id)
+        currency_code = len(user_pref) > 0 and user_pref[0].currency.code or 'EUR'
 
         try:
             reservation = Reservation.objects.get(pk=reservation_id)
@@ -29,7 +26,7 @@ class InitiatePaymentView(APIView):
             return Response(reponses(success=0, error_msg='Reservation not found'), status=404)
 
         payload = {
-            "currency": currency.code,
+            "currency": currency_code,
             "amount": amount,
             "payment_method": payment_method
         }
