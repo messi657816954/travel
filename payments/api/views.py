@@ -17,8 +17,8 @@ class InitiatePaymentView(APIView):
         amount = request.data.get("amount")
         reservation_id = request.data.get("reservation")
         payment_method = request.data.get("payment_method")
-        user_pref = UserPreference.objects.filter(user_id=request.user.id)
-        currency_code = len(user_pref) > 0 and user_pref[0].currency.code or 'EUR'
+        user_pref = UserPreference.objects.filter(user_id=request.user.id).first()
+        currency_code = user_pref and user_pref.currency.code or 'EUR'
 
         try:
             reservation = Reservation.objects.get(pk=reservation_id)

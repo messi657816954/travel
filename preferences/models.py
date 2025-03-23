@@ -29,4 +29,4 @@ class UserPreference(models.Model):
     currency = models.ForeignKey(Currency, on_delete=models.CASCADE, null=True)
 
     def __str__(self):
-        return f"Preferences of {self.user.username}"
+        return f"Preferences of {self.user_id.username}"
