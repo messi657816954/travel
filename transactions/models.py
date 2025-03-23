@@ -27,7 +27,7 @@ class Transactions(models.Model):
     ref = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     type = models.CharField(max_length=20, choices=TRANSACTIONS_TYPE)  # Ajout de max_length
     state = models.CharField(max_length=20, choices=TRANSACTIONS_STATE)  # Ajout de max_length
-    externa_id = models.CharField(max_length=255, null=True, blank=True)
+    external_id = models.CharField(max_length=255, null=True, blank=True)
     amount = models.DecimalField(
         max_digits=12,
         decimal_places=2,
