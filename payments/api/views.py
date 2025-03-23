@@ -35,7 +35,7 @@ class InitiatePaymentView(APIView):
             response = requests.post(SPRING_BOOT_PAYMENT_URL, json=payload, timeout=10)
             response_data = response.json()
 
-            if response.status_code == 200 and response_data.get("status") == "success":
+            if response_data.get("status") == 200:
                 return Response(reponses(success=1, results={"clientSecret": response_data.get("clientSecret")}))
             else:
                 return Response(reponses(success=0, error_msg='Échec du paiement'), status=400)
