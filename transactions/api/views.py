@@ -41,6 +41,7 @@ def create_transactions(amount, currency, type, state, external_id=None, sender=
         amount = amount,
         amount_to_collect = amount,
         currency = currency,
+        currency_to_collect = currency,
         announce = reservation and reservation.annonce,
         reservation = reservation,
         sender = sender,
