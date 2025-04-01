@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+from users.utils import EMAIL_HOST_PASSWORD
 import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -180,7 +181,7 @@ EMAIL_HOST = 'mail.lejangui.com'
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'contact@lejangui.com'
-EMAIL_HOST_PASSWORD = ']ZTEcApI1ZVg'
+EMAIL_HOST_PASSWORD = EMAIL_HOST_PASSWORD
 
 TWILIO_ACCOUNT_SID = "AC2bb830ebf39487cae5db6c5af2ed8b0f"
 TWILIO_AUTH_TOKEN = "e2d9dfbafac110a43096310ce9b99675"
