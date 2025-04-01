@@ -143,10 +143,10 @@ USE_I18N = True
 USE_TZ = True
 
 
-MEDIA_URL = '/media/'  # Préfixe URL pour les fichiers média
+MEDIA_URL = 'media/'  # Préfixe URL pour les fichiers média
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-STATIC_URL = '/static/'
+STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]

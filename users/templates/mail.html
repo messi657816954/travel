@@ -5,65 +5,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bienvenue sur LeJangui</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: url({% static 'images/background lj.jpg' %}) no-repeat center center/cover;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            width: 100%;
-            max-width: 600px;
-            margin: 20px auto;
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            text-align: left;
-        }
-        .header {
-            width: 100%;
-        }
-        .footer {
-            width: 100%;
-            margin-top: 20px;
-        }
-	.red-bar {
-            width: 100%;
-            max-width: 600px;
-            height: 6px;
-            background-color: #C00000;
-            top: 0;
-            left: 0;
-        }
-	.div-space {
-	    padding-left: 30px
-	}
-        .footer-text {
-            font-size: 14px;
-            color: #777;
-        }
-
-        .welcome-text {
-            font-size: 50px;
-            font-style: italic;
-            font-weight: bold;
-            text-decoration: underline;
-            font-family: 'French Script MT', cursive; /* Remplace par la police exacte si tu la connais */
-            color: #C00000; /* Rouge */
-            transform: rotate(-30deg); /* Inclinaison */
-            display: inline-block;
-            margin: 20px;
-    </style>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
 <body>
     <div class="container">
-    	<img src="{% static 'images/entete-16.jpg' %}" alt="Entête">
+    	<img src="{% static 'images/entetelj.jpg' %}" alt="Entête">
 	<div class="div-space">
         	<h2>Bienvenue {{client}} ! <div class="welcome-text">Welcome</div></h2>
 
         	<p>Merci de rejoindre la communauté LeJangui, la Plateforme qui va vous faciliter la vie.</p>
-        	<p>Votre compte est créé. Pour l’activer et profiter de tous vos avantages, il vous suffit de finaliser votre inscription, en utilisant le code ci-dessous :</p>
+        	<p>Votre compte est créé. Pour l’activer et profiter de tous vos avantages, il vous suffit de finaliser votre inscription, en utilisant le code ci-dessous:</p>
         	<h2>{{code}}</h2>
         	<p class="footer-text"><i>*Si vous n’êtes pas à l’origine de la création de ce compte, merci de ne pas cliquer sur le lien.</i></p>
         	<p class="footer-text">Pour toutes questions, n’hésitez pas à contacter notre service clients.</p>
