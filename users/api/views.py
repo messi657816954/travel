@@ -214,7 +214,7 @@ class InitRegistrationAPIView(APIView):
             }
             ctx = {
                 'code': code,
-                'client': request.data['email']
+                'client': request.data['firstname']
             }
             add_email_otp(request.data['email'], code)
             message = render_to_string('mail.html', ctx)

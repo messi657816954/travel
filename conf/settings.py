@@ -146,6 +146,9 @@ MEDIA_URL = '/media/'  # Préfixe URL pour les fichiers média
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "travel/static"),
+]
 AUTH_USER_MODEL = 'users.User'
 
 REST_FRAMEWORK = {
@@ -173,11 +176,11 @@ REST_FRAMEWORK = {
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST = 'mail.lejangui.com'
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
-EMAIL_HOST_USER = 'aristide1.messi1@gmail.com'
-EMAIL_HOST_PASSWORD = 'itwgkstlbwuzwpyk'
+EMAIL_HOST_USER = 'contact@lejangui.com'
+EMAIL_HOST_PASSWORD = ']ZTEcApI1ZVg'
 
 TWILIO_ACCOUNT_SID = "AC2bb830ebf39487cae5db6c5af2ed8b0f"
 TWILIO_AUTH_TOKEN = "e2d9dfbafac110a43096310ce9b99675"
