@@ -146,12 +146,12 @@ USE_TZ = True
 MEDIA_URL = '/media/'  # Préfixe URL pour les fichiers média
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static/"),
+    os.path.join(BASE_DIR, "static"),
 ]
 AUTH_USER_MODEL = 'users.User'
-
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'users.exception_handlers.custom_exception_handler',
 
