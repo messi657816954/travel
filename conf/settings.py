@@ -148,7 +148,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "media/profile_pics"),
+    os.path.join(BASE_DIR, "static/"),
 ]
 AUTH_USER_MODEL = 'users.User'
 
