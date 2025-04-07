@@ -40,12 +40,17 @@ class Annonce(TimeStampedModel):
     cout_total = models.DecimalField(max_digits=10, decimal_places=2)
     commission = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     revenue_transporteur = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    # statut = models.BooleanField(default=False)
+    canceled = models.BooleanField(default=False)
     active = models.BooleanField(default=True)
     reference = models.CharField(max_length=50, unique=True)
     voyage = models.OneToOneField(Voyage, on_delete=models.CASCADE)
     user_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name='annonces')
     # type_bagage_auto = models.ForeignKey(TypeBagage, on_delete=models.CASCADE, related_name='annonces_bagage')
+
+    def save(self, *args, **kwargs):
+        self.commission = self.cout_total * 0.25
+        self.revenue_transporteur = self.cout_total * 0.75
+        super().save(*args, **kwargs)
 
 
 

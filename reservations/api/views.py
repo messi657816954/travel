@@ -257,63 +257,68 @@ class CancelReservationByAnnonceurAPIView(APIView):
     def post(self, request):
         try:
             reservation = Reservation.objects.get(id=request.query_params['reservation_id'])
-            annonce = Annonce.objects.get(id=reservation.annonce.pk)
-            transaction = Transactions.objects.filter(reservation=request.query_params['reservation_id'], type='transfer').exclude(state__in=['canceled', 'failed'])
+            res = cancelReservation(request, reservation)
 
-            ctx = {'reservation_ref': reservation.reference}
-            if reservation.statut in ['VALIDATE']:
-                notify_user(
-                    user=reservation.user,
-                    subject="Réservation annulée",
-                    template_name='reservation_cancelled.html',
-                    context=ctx,
-                    plain_message=f"Votre réservation {reservation.reference} a été annulée et remboursée."
-                )
-            elif reservation.statut in ['CONFIRM']:
-                fees = Decimal("5")
-                fees_transaction = create_transactions(fees, transaction.currency_to_collect, 'fees', 'completed', None, reservation.annonce.user_id, None, reservation.id)
-                notify_user(
-                    user=reservation.user,
-                    subject="Réservation annulée",
-                    template_name='reservation_cancelled.html',
-                    context=ctx,
-                    plain_message=f"Votre réservation {reservation.reference} a été annulée."
-                )
-                notify_user(
-                    user=annonce.user_id,
-                    subject="Réservation annulée",
-                    template_name='reservation_cancelled_annonceur.html',
-                    context=ctx,
-                    plain_message=f"La réservation {reservation.reference} sur votre annonce a été annulée."
-                )
-            else:
-                return Response(reponses(success=0, error_msg='You can not cancel a reservation received, delivered or completed'))
-
-            try:
-                refund_transaction = create_refund_transactions(transaction.id, reservation.montant,
-                                                                transaction.external_id)
-                payload = {
-                    "processingId": transaction.external_id,
-                    "transactionId": refund_transaction.ref,
-                    "amount": reservation.montant
-                }
-                response = requests.post(SPRING_BOOT_REFUND_PAYMENT_URL, json=payload, timeout=10)
-            except requests.exceptions.RequestException:
-                return Response(
-                    reponses(success=0, error_msg='Erreur de communication avec le service de remboursement'),
-                    status=500)
-
-            # Annuler la réservation et ajuster les kg disponibles
-            reservation.statut = 'CANCEL'
-            reservation.save()
-            annonce.nombre_kg_dispo += reservation.nombre_kg
-            annonce.save()
-
-            return Response(reponses(success=1, results={'message': 'Réservation annulée avec succès'}))
+            return Response(reponses(success=res[0], results={'message': res[1]}))
         except Reservation.DoesNotExist:
             return Response(reponses(success=0, error_msg='Réservation non trouvée'))
         except Exception as e:
             return Response(reponses(success=0, error_msg=str(e)))
+
+
+def cancelReservation(request, reservation):
+    annonce = Annonce.objects.get(id=reservation.annonce.pk)
+    transaction = Transactions.objects.filter(reservation__pk=reservation.pk,
+                                              type='transfer').exclude(state__in=['canceled', 'failed'])
+
+    ctx = {'reservation_ref': reservation.reference}
+    if reservation.statut in ['VALIDATE']:
+        notify_user(
+            user=reservation.user,
+            subject="Réservation annulée",
+            template_name='reservation_cancelled.html',
+            context=ctx,
+            plain_message=f"Votre réservation {reservation.reference} a été annulée et remboursée."
+        )
+    elif reservation.statut in ['CONFIRM']:
+        fees = Decimal("5")
+        fees_transaction = create_transactions(fees, transaction.currency_to_collect, 'fees', 'completed', None,
+                                               reservation.annonce.user_id, None, reservation.id)
+        notify_user(
+            user=reservation.user,
+            subject="Réservation annulée",
+            template_name='reservation_cancelled.html',
+            context=ctx,
+            plain_message=f"Votre réservation {reservation.reference} a été annulée."
+        )
+        notify_user(
+            user=annonce.user_id,
+            subject="Réservation annulée",
+            template_name='reservation_cancelled_annonceur.html',
+            context=ctx,
+            plain_message=f"La réservation {reservation.reference} sur votre annonce a été annulée."
+        )
+    else:
+        return 0,'You can not cancel a reservation received, delivered or completed'
+
+    try:
+        refund_transaction = create_refund_transactions(transaction.id, reservation.montant,
+                                                        transaction.external_id)
+        payload = {
+            "processingId": transaction.external_id,
+            "transactionId": refund_transaction.ref,
+            "amount": reservation.montant
+        }
+        response = request.post(SPRING_BOOT_REFUND_PAYMENT_URL, json=payload, timeout=10)
+    except request.exceptions.RequestException:
+        return 0, 'Réservation annulée avec succès'
+
+    # Annuler la réservation et ajuster les kg disponibles
+    reservation.statut = 'CANCEL'
+    reservation.save()
+    annonce.nombre_kg_dispo += reservation.nombre_kg
+    annonce.save()
+    return 1, 'Réservation annulée avec succès'
 
 
 class CancelReservationByReserveurAPIView(APIView):
@@ -367,8 +372,6 @@ class CancelReservationByReserveurAPIView(APIView):
             return Response(reponses(success=0, error_msg=str(e)))
 
 
-
-
 class ReceptionColisReservationAPIView(APIView):
     permission_classes = (IsAuthenticated,)
 
@@ -400,8 +403,6 @@ class ReceptionColisReservationAPIView(APIView):
             return Response(reponses(success=0, error_msg='Réservation non trouvée'))
         except Exception as e:
             return Response(reponses(success=0, error_msg=str(e)))
-
-
 
 
 class LivraisonColisReservationAPIView(APIView):
@@ -467,10 +468,6 @@ class LivraisonColisReservationAPIView(APIView):
             return Response(reponses(success=0, error_msg=str(e)))
 
 
-
-
-
-
 class ReservationsListAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -518,7 +515,6 @@ class ReservationDetailAPIView(APIView):
         mail.send(fail_silently=True)
 
 
-
 class ReservationsListByAnnonceAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -528,10 +524,8 @@ class ReservationsListByAnnonceAPIView(APIView):
             paginator = Paginator(moyens, 5)
             page = request.query_params['page']
             moyens = paginator.get_page(page)
-            print(moyens)
             serializer = ReservationSerializer(moyens, many=True)
             counts = paginator.num_pages
-            print('serializer.data', serializer.data)
             res = reponses(success=1, results=serializer.data,num_page=counts)
             return Response(res)
         return Response(reponses(success=0, error_msg="Spécifiez la page et l'identifiant de l'annonce!"))

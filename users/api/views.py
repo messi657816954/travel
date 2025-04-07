@@ -224,7 +224,6 @@ class InitRegistrationAPIView(APIView):
                 settings.EMAIL_HOST_USER,
                 [request.data['email']]
             )
-            print("**********",settings.EMAIL_HOST_PASSWORD)
             mail.content_subtype = "html"
             mail.send(fail_silently=True)
 

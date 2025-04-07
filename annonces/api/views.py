@@ -18,6 +18,7 @@ from .serializers import AnnonceSerializer, VoyageSerializer, TypeBagageSerializ
     AvisUserSerializer, AvisRecusSerializer, AvisDonnesSerializer
 from ..models import Annonce, TypeBagageAnnonce, Voyage
 from django.core.paginator import Paginator
+from reservations.api.views import cancelReservation
 
 
 
@@ -166,6 +167,30 @@ class PublierAnnonceAPIView(APIView):
         except Exception as e:
             return Response(reponses(success=0, error_msg=str(e)))
 
+class CancelAnnonceAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    @transaction.atomic
+    def post(self, request):
+        try:
+            annonce = Annonce.objects.get(id=request.query_params['annonce_id'])
+            reservations = Reservation.objects.filter(annonce__pk=request.query_params['annonce_id'])
+            for reservation in reservations:
+                cancel = cancelReservation(request, reservation)
+                if cancel[0] == 0:
+                    return Response(reponses(success=0, error_msg=cancel[1]))
+
+            annonce.published = False
+            annonce.canceled = True
+            annonce.save()
+
+            return Response(reponses(success=1, results={'message': 'annonce publiée avec succès.'}))
+
+        except Reservation.DoesNotExist:
+            return Response(reponses(success=0, error_msg='Annonce non trouvée'))
+        except Exception as e:
+            return Response(reponses(success=0, error_msg=str(e)))
+
 
 class ConfirmerLivraisonAPIView(APIView):
     permission_classes = (IsAuthenticated,)
@@ -269,14 +294,9 @@ class AnnonceDetailAPIView(APIView):
             return Response(res)
         serializer = AnnonceDetailSerializer(annonce)
         # 3. Préparer la réponse avec les données combinées
-        # list_bagage_auto = TypeBagage.objects.filter(id__in=request.data['list_bagage'])
-        list_bagage_auto = TypeBagage.objects.filter(
-                                type_bagage_annonces__annonce=annonce
-                            ).distinct()
 
         response_data = {
             **serializer.data,
-            'bagage_auto': TypeBagageSerializer(list_bagage_auto,many=True).data,
         }
         res = reponses(success=1, results=response_data, error_msg='')
         return Response(res)
@@ -323,7 +343,7 @@ class AnnonceSearchAPIView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
-        queryset = Annonce.objects.all()
+        queryset = Annonce.objects.filter(published=True).order_by("-date_publication")
 
         # 🔹 Filtrage par date de départ (optionnel)
         date_depart = request.query_params.get('date_depart', None)
