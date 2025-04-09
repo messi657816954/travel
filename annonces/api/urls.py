@@ -3,7 +3,7 @@ from django.urls import path
 from .views import (
     CreateAnnonceAPIView,
     ConfirmerLivraisonAPIView, PublierAnnonceAPIView, AnnonceDetailAPIView, AnnoncesListAPIView, UpdateAnnonceAPIView,
-    AllAnnoncesListAPIView, AnnonceSearchAPIView, DonnerAvisAPIView, UtilisateurAvisView
+    AllAnnoncesListAPIView, AnnonceSearchAPIView, DonnerAvisAPIView, UtilisateurAvisView, CancelAnnonceAPIView
 )
 
 
@@ -11,6 +11,7 @@ from .views import (
 urlpatterns = [
     path('create/', CreateAnnonceAPIView.as_view(), name='create-annonce'),
     path('update/', UpdateAnnonceAPIView.as_view(), name='update-annonce'),
+    path('cancel/', CancelAnnonceAPIView.as_view(), name='cancel-annonce'),
     path('publier/', PublierAnnonceAPIView.as_view(), name='publier-annonce'),
     path('confirmer-livraison/', ConfirmerLivraisonAPIView.as_view(), name='confirmer-livraison'),
     path('detail/', AnnonceDetailAPIView.as_view(), name='detail'),

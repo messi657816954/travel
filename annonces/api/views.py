@@ -173,8 +173,8 @@ class CancelAnnonceAPIView(APIView):
     @transaction.atomic
     def post(self, request):
         try:
-            annonce = Annonce.objects.get(id=request.query_params['annonce_id'])
-            reservations = Reservation.objects.filter(annonce__pk=request.query_params['annonce_id'])
+            annonce = Annonce.objects.get(id=request.query_params['pk'])
+            reservations = Reservation.objects.filter(annonce__pk=request.query_params['pk'])
             for reservation in reservations:
                 cancel = cancelReservation(request, reservation)
                 if cancel[0] == 0:
