@@ -78,8 +78,8 @@ class ListBankDetailsView(APIView):
 class DeleteBankDetailsView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def delete(self, request, pk, *args, **kwargs):
-        bank_detail = BankDetails.objects.get(id=pk)
+    def delete(self, request):
+        bank_detail = BankDetails.objects.get(id=request.query_params['pk'])
         if not bank_detail:
             return Response({"message": "Coordonnées introuvable."}, status=status.HTTP_404_NOT_FOUND)
         bank_detail.delete()
