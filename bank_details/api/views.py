@@ -79,8 +79,17 @@ class DeleteBankDetailsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def delete(self, request):
-        bank_detail = BankDetails.objects.get(id=request.query_params['pk'])
-        if not bank_detail:
-            return Response({"message": "Coordonnées introuvable."}, status=status.HTTP_404_NOT_FOUND)
+        pk = request.query_params.get('pk')
+        if not pk:
+            return Response({"message": "Paramètre 'pk' manquant."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            bank_detail = BankDetails.objects.get(id=pk)
+        except BankDetails.DoesNotExist:
+            return Response({"message": "Coordonnées introuvables."}, status=status.HTTP_404_NOT_FOUND)
+
+        if request.user.id != bank_detail.user_id:
+            return Response({"message": "Accès non autorisé."}, status=status.HTTP_403_FORBIDDEN)
+
         bank_detail.delete()
-        return Response({"message": "Coordonnées supprimé avec succès."}, status=status.HTTP_204_NO_CONTENT)
+        return Response({"message": "Coordonnées supprimées avec succès."}, status=status.HTTP_200_OK)
