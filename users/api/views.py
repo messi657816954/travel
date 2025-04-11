@@ -224,6 +224,7 @@ class InitRegistrationAPIView(APIView):
                 [request.data['email']]
             )
             mail.content_subtype = "html"
+            print("**********", settings.EMAIL_HOST_PASSWORD)
             mail.send(fail_silently=True)
 
             res = reponses(success=1, results=data_response, error_msg='')
