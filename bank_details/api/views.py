@@ -9,6 +9,24 @@ from users.utils import STRIPE_API_KEY
 
 stripe.api_key = STRIPE_API_KEY
 
+
+def saveBAnkDetails(user, payment_method_id) :
+    try:
+        stripe_payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
+        last4 = stripe_payment_method["card"]["last4"]
+        provider = stripe_payment_method["card"]["brand"]
+
+        method = BankDetails.objects.create(
+            user_id=user,
+            last4=last4,
+            provider=provider,
+            payment_method_id=payment_method_id
+        )
+        return {"message": "Méthode enregistrée"}, status.HTTP_201_CREATED
+
+    except Exception as e:
+        return {"error": str(e)}, status.HTTP_400_BAD_REQUEST
+
 class ListPaymentMethodsBaseView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -44,22 +62,9 @@ class BankDetailsView(APIView):
     def post(self, request):
         user = request.user
         payment_method_id = request.data.get("payment_method_id")
+        save_response = saveBAnkDetails(user, payment_method_id)
 
-        try:
-            stripe_payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
-            last4 = stripe_payment_method["card"]["last4"]
-            provider = stripe_payment_method["card"]["brand"]
-
-            method = BankDetails.objects.create(
-                user_id=user,
-                last4=last4,
-                provider=provider,
-                payment_method_id=payment_method_id
-            )
-            return Response({"message": "Méthode enregistrée"}, status=status.HTTP_201_CREATED)
-
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(save_response[0], status=save_response[1])
 
 class ListBankDetailsView(APIView):
     permission_classes = [IsAuthenticated]

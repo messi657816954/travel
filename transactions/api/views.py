@@ -67,6 +67,7 @@ class TransactionCreateView(APIView):
     def post(self, request):
         amount = request.data["amount"]
         reservation_id = request.data["reservation"]
+        payment_method_save = request.data.get("method_save")
         user_pref = UserPreference.objects.filter(user_id=request.user.id).first()
         currency = user_pref and user_pref.currency or Currency.objects.get(code='EUR')
         try:

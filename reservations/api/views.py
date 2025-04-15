@@ -10,7 +10,7 @@ from decimal import Decimal
 from annonces.models import Annonce
 from annonces.models import Compte, Transaction
 from transactions.models import Transactions
-from users.utils import reponses, generate_reference, generate_password, notify_user, SPRING_BOOT_REFUND_PAYMENT_URL
+from users.utils import reponses, generate_reference, generate_password, notify_user, SPRING_BOOT_REFUND_PAYMENT_URL, SPRING_BOOT_CAPTURE_PAYMENT_URL, SPRING_BOOT_CANCEL_PAYMENT_URL
 from .serializers import ReservationSerializer
 from django.db import transaction
 from annonces.models import Reservation
@@ -156,34 +156,6 @@ class PublishReservationAPIView(APIView):
             annonce.nombre_kg_dispo -= reservation.nombre_kg
             annonce.save()
 
-            user_compte = Compte.objects.get(user=request.user)  # Compte de l'utilisateur connecté
-            annonce_compte = Compte.objects.get(user=annonce.user_id)  # Compte de l'utilisateur de l'annonce
-
-            # Créer les transactions
-            from decimal import Decimal  # Pour gérer les montants
-            montant = Decimal(reservation.montant)
-
-            # Transaction DEBIT pour l'utilisateur connecté
-            Transaction.objects.create(
-                montant=montant,
-                reservation=reservation,
-                compte=user_compte,
-                transaction_type="DEBIT",
-                transaction_status="PENDING",
-            )
-            # Transaction CREDIT pour l'utilisateur de l'annonce
-            Transaction.objects.create(
-                montant=montant,
-                reservation=reservation,
-                compte=annonce_compte,
-                transaction_type="CREDIT",
-                transaction_status="PENDING",
-            )
-            user_compte.calculate_balances()
-            annonce_compte.calculate_balances()
-
-            # Partie mise à jour : Notification
-            ### Début de la mise en évidence ###
             ctx = {'annonce_ref': annonce.reference, 'reservation_ref': reservation.reference, 'kg_reserves': reservation.nombre_kg}
             notify_user(
                 user=annonce.user_id,
@@ -208,6 +180,8 @@ class ConfirmReservationByAnnonceurAPIView(APIView):
         try:
             reservation = Reservation.objects.get(id=request.query_params['reservation_id'])
             annonce = Annonce.objects.get(id=reservation.annonce.pk)
+            transaction = Transactions.objects.filter(reservation__pk=reservation.pk,
+                                                      type='transfer').exclude(state__in=['canceled', 'failed'])
 
             # Générer le code de réception
             code_reception = generate_password()
@@ -215,21 +189,13 @@ class ConfirmReservationByAnnonceurAPIView(APIView):
             reservation.statut = 'CONFIRM'
             reservation.save()
 
-            # Gestion des transactions
-            user_compte = Compte.objects.get(user=request.user)
-            reservation_compte = Compte.objects.get(user=reservation.user)
-            transaction_debit = Transaction.objects.get(
-                compte=reservation_compte, reservation=reservation, transaction_type="DEBIT", transaction_status="PENDING"
-            )
-            transaction_credit = Transaction.objects.get(
-                compte=user_compte, reservation=reservation, transaction_type="CREDIT", transaction_status="PENDING"
-            )
-            transaction_debit.transaction_status = "SUCCESSFUL"
-            transaction_credit.transaction_status = "SUCCESSFUL"
-            transaction_debit.save()
-            transaction_credit.save()
-            user_compte.calculate_balances()
-            reservation_compte.calculate_balances()
+            try:
+                payload = {
+                    "paymentIntentId": transaction.external_id
+                }
+                response = request.post(SPRING_BOOT_CAPTURE_PAYMENT_URL, json=payload, timeout=10)
+            except Reservation.DoesNotExist:
+                return Response(reponses(success=0, error_msg='Erreur lors de la confirmation du paiement'))
 
             # Partie mise à jour : Notification
             ### Début de la mise en évidence ###
@@ -278,12 +244,19 @@ def cancelReservation(request, reservation):
             subject="Réservation annulée",
             template_name='reservation_cancelled.html',
             context=ctx,
-            plain_message=f"Votre réservation {reservation.reference} a été annulée et remboursée."
+            plain_message=f"Votre réservation {reservation.reference} a été annulée."
         )
+        try:
+            payload = {
+                "paymentIntentId": transaction.external_id
+            }
+            response = request.post(SPRING_BOOT_CANCEL_PAYMENT_URL, json=payload, timeout=10)
+        except Reservation.DoesNotExist:
+            return Response(reponses(success=0, error_msg='Erreur'))
     elif reservation.statut in ['CONFIRM']:
-        fees = Decimal("5")
-        fees_transaction = create_transactions(fees, transaction.currency_to_collect, 'fees', 'completed', None,
-                                               reservation.annonce.user_id, None, reservation.id)
+        #fees = Decimal("5")
+        #fees_transaction = create_transactions(fees, transaction.currency_to_collect, 'fees', 'completed', None,
+                                              # reservation.annonce.user_id, None, reservation.id)
         notify_user(
             user=reservation.user,
             subject="Réservation annulée",
@@ -298,24 +271,25 @@ def cancelReservation(request, reservation):
             context=ctx,
             plain_message=f"La réservation {reservation.reference} sur votre annonce a été annulée."
         )
+        try:
+            refund_transaction = create_refund_transactions(transaction.id, reservation.montant,
+                                                            transaction.external_id)
+            payload = {
+                "processingId": transaction.external_id,
+                "transactionId": refund_transaction.ref,
+                "amount": reservation.montant
+            }
+            response = request.post(SPRING_BOOT_REFUND_PAYMENT_URL, json=payload, timeout=10)
+        except request.exceptions.RequestException:
+            return 0, 'Réservation annulée avec succès'
     else:
         return 0,'You can not cancel a reservation received, delivered or completed'
-
-    try:
-        refund_transaction = create_refund_transactions(transaction.id, reservation.montant,
-                                                        transaction.external_id)
-        payload = {
-            "processingId": transaction.external_id,
-            "transactionId": refund_transaction.ref,
-            "amount": reservation.montant
-        }
-        response = request.post(SPRING_BOOT_REFUND_PAYMENT_URL, json=payload, timeout=10)
-    except request.exceptions.RequestException:
-        return 0, 'Réservation annulée avec succès'
 
     # Annuler la réservation et ajuster les kg disponibles
     reservation.statut = 'CANCEL'
     reservation.save()
+    transaction.state = 'CANCEL'
+    transaction.save()
     annonce.nombre_kg_dispo += reservation.nombre_kg
     annonce.save()
     return 1, 'Réservation annulée avec succès'
@@ -328,44 +302,9 @@ class CancelReservationByReserveurAPIView(APIView):
     def post(self, request):
         try:
             reservation = Reservation.objects.get(id=request.query_params['reservation_id'], user=request.user)
-            annonce = Annonce.objects.get(id=reservation.annonce.pk)
-            transaction = Transactions.objects.filter(reservation=request.query_params['reservation_id'], type='transfer').exclude(state__in=['canceled', 'failed'])
-            voyage = annonce.voyage
-            refund_amount = transaction.montant
-            fees = Decimal("0")
+            res = cancelReservation(request, reservation)
 
-            ctx = {'reservation_ref': reservation.reference}
-
-            if reservation.statut in ['VALIDATE', 'PENDING', 'CONFIRM']:
-                message = render_to_string('reservation_cancelled.html', ctx)
-                send_email_async("Réservation annulée", message, [request.user.email, transaction.beneficiary.email])
-                if reservation.statut == "CONFIRM":
-                    fees = voyage.date_depart - timezone.now() < timedelta(days=2) and (refund_amount * 20 / 100) or (refund_amount * 10 / 100)
-                    refund_amount -= fees
-            else:
-                return Response(reponses(success=0, error_msg='You can not cancel a reservation received, delivered or completed'))
-
-            try:
-                refund_transaction = create_refund_transactions(transaction.id, refund_amount,
-                                                                transaction.external_id)
-                payload = {
-                    "processingId": transaction.external_id,
-                    "transactionId": refund_transaction.ref,
-                    "amount": refund_amount
-                }
-                response = requests.post(SPRING_BOOT_REFUND_PAYMENT_URL, json=payload, timeout=10)
-            except requests.exceptions.RequestException:
-                return Response(
-                    reponses(success=0, error_msg='Erreur de communication avec le service de remboursement'),
-                    status=500)
-
-
-            reservation.statut = 'CANCEL'
-            reservation.save()
-            annonce.nombre_kg_dispo += reservation.nombre_kg
-            annonce.save()
-
-            return Response(reponses(success=1, results={'message': 'Réservation annulée'}))
+            return Response(reponses(success=res[0], results={'message': res[1]}))
         except Reservation.DoesNotExist:
             return Response(reponses(success=0, error_msg='Réservation non trouvée'))
         except Exception as e:

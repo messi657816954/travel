@@ -22,6 +22,9 @@ STRIPE_API_KEY = env('STRIPE_API_KEY', default='TaCleSuperSecurisee1234567890=')
 SPRING_BOOT_PAYMENT_URL = env('SPRING_BOOT_PAYMENT_URL', default='http://localhost:8084/api/payment/create-payment-intent')
 SPRING_BOOT_UPDATE_PAYMENT_URL = env('SPRING_BOOT_UPDATE_PAYMENT_URL', default='http://localhost:8084/api/payment/confirm-payment')
 SPRING_BOOT_REFUND_PAYMENT_URL = env('SPRING_BOOT_REFUND_PAYMENT_URL', default='http://localhost:8084/api/payment/refund-payment')
+SPRING_BOOT_CAPTURE_PAYMENT_URL = env('SPRING_BOOT_CAPTURE_PAYMENT_URL', default='http://localhost:8084/api/payment/capture')
+SPRING_BOOT_CANCEL_PAYMENT_URL = env('SPRING_BOOT_CANCEL_PAYMENT_URL', default='http://localhost:8084/api/payment/cancel')
+SPRING_BOOT_SETUP_PAYMENT_URL = env('SPRING_BOOT_SETUP_PAYMENT_URL', default='http://localhost:8084/api/payment/setup-intent')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='TestSecret')
 
 
