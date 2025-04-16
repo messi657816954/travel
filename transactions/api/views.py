@@ -23,7 +23,7 @@ def get_transaction_title(transaction, user_id):
         title += transaction.state == "refund" and "Remboursé le" or transaction.state == "pending" and "En attente..." \
                  or transaction.type == "deposit" and "Recharge du" or "Payé le"
 
-    title += transaction.created_at.strtime("%-d %b.")
+    title += transaction.created_at.strftime("%-d %b.")
     return title
 
 def set_description(transaction):
