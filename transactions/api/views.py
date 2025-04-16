@@ -28,7 +28,7 @@ def get_transaction_title(transaction, user_id):
 
 def set_description(transaction):
     nb_kg = transaction.reservation.nombre_kg
-    departure_date = transaction.announce.voyage.date_depart.strtime("%-d %B")
+    departure_date = transaction.announce.voyage.date_depart.strftime("%-d %B")
     departure = transaction.announce.voyage.provenance.intitule
     destination = transaction.announce.voyage.destination.intitule
 
