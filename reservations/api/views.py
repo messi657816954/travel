@@ -281,15 +281,16 @@ def cancelReservation(request, reservation):
                 "amount": str(reservation.montant)
             }
             response = requests.post(SPRING_BOOT_REFUND_PAYMENT_URL, json=payload, timeout=10)
+            refund_transaction.save()
         except requests.exceptions.RequestException:
             return 0, 'Réservation annulée avec succès'
     else:
         return 0,'You can not cancel a reservation received, delivered or completed'
 
     # Annuler la réservation et ajuster les kg disponibles
-    reservation.statut = 'CANCEL'
+    reservation.statut = 'cancel'
     reservation.save()
-    transaction[0].state = 'CANCEL'
+    transaction[0].state = 'cancel'
     transaction[0].save()
     annonce.nombre_kg_dispo += reservation.nombre_kg
     annonce.save()
