@@ -288,9 +288,9 @@ def cancelReservation(request, reservation):
         return 0,'You can not cancel a reservation received, delivered or completed'
 
     # Annuler la réservation et ajuster les kg disponibles
-    reservation.statut = 'cancel'
+    reservation.statut = 'CANCEL'
     reservation.save()
-    transaction[0].state = 'cancel'
+    transaction[0].state = 'canceled'
     transaction[0].save()
     annonce.nombre_kg_dispo += reservation.nombre_kg
     annonce.save()
