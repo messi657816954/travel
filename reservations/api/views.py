@@ -277,7 +277,7 @@ def cancelReservation(request, reservation):
                                                             transaction[0].external_id)
             payload = {
                 "processingId": transaction[0].external_id,
-                "transactionId": refund_transaction.ref,
+                "transactionId": str(refund_transaction.ref),
                 "amount": reservation.montant
             }
             response = requests.post(SPRING_BOOT_REFUND_PAYMENT_URL, json=payload, timeout=10)
