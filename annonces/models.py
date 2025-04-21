@@ -3,6 +3,7 @@ from django.db import models
 
 from commons.models import TimeStampedModel, Ville, TypeBagage
 from users.models import User, Compte
+from decimal import Decimal
 
 TRANSPORT_CHOICES = [
         ('AERIEN', 'AERIEN'),
@@ -48,8 +49,9 @@ class Annonce(TimeStampedModel):
     # type_bagage_auto = models.ForeignKey(TypeBagage, on_delete=models.CASCADE, related_name='annonces_bagage')
 
     def save(self, *args, **kwargs):
-        self.commission = self.cout_total * 0.25
-        self.revenue_transporteur = self.cout_total * 0.75
+        if self.commission == 0 or self.revenue_transporteur == 0:
+            self.commission = self.cout_total * Decimal('0.25')
+            self.revenue_transporteur = self.cout_total * Decimal('0.75')
         super().save(*args, **kwargs)
 
 
