@@ -16,6 +16,7 @@ from django.db import transaction
 from annonces.models import Reservation
 from django.core.paginator import Paginator
 from transactions.api.views import create_refund_transactions, create_transactions
+import requests
 
 
 class ReserverKilogrammesAPIView(APIView):
@@ -280,7 +281,7 @@ def cancelReservation(request, reservation):
                 "amount": reservation.montant
             }
             response = request.post(SPRING_BOOT_REFUND_PAYMENT_URL, json=payload, timeout=10)
-        except request.exceptions.RequestException:
+        except requests.exceptions.RequestException:
             return 0, 'Réservation annulée avec succès'
     else:
         return 0,'You can not cancel a reservation received, delivered or completed'
