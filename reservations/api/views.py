@@ -194,7 +194,7 @@ class ConfirmReservationByAnnonceurAPIView(APIView):
                 payload = {
                     "paymentIntentId": transaction.external_id
                 }
-                response = request.post(SPRING_BOOT_CAPTURE_PAYMENT_URL, json=payload, timeout=10)
+                response = requests.post(SPRING_BOOT_CAPTURE_PAYMENT_URL, json=payload, timeout=10)
             except Reservation.DoesNotExist:
                 return Response(reponses(success=0, error_msg='Erreur lors de la confirmation du paiement'))
 
@@ -251,7 +251,7 @@ def cancelReservation(request, reservation):
             payload = {
                 "paymentIntentId": transaction[0].external_id
             }
-            response = request.post(SPRING_BOOT_CANCEL_PAYMENT_URL, json=payload, timeout=10)
+            response = requests.post(SPRING_BOOT_CANCEL_PAYMENT_URL, json=payload, timeout=10)
         except Reservation.DoesNotExist:
             return Response(reponses(success=0, error_msg='Erreur'))
     elif reservation.statut in ['CONFIRM']:
@@ -280,7 +280,7 @@ def cancelReservation(request, reservation):
                 "transactionId": refund_transaction.ref,
                 "amount": reservation.montant
             }
-            response = request.post(SPRING_BOOT_REFUND_PAYMENT_URL, json=payload, timeout=10)
+            response = requests.post(SPRING_BOOT_REFUND_PAYMENT_URL, json=payload, timeout=10)
         except requests.exceptions.RequestException:
             return 0, 'Réservation annulée avec succès'
     else:
