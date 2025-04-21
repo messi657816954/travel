@@ -290,7 +290,7 @@ def cancelReservation(request, reservation):
     # Annuler la réservation et ajuster les kg disponibles
     reservation.statut = 'CANCEL'
     reservation.save()
-    transaction[0].state = 'canceled'
+    transaction[0].state = 'Canceled'
     transaction[0].save()
     annonce.nombre_kg_dispo += reservation.nombre_kg
     annonce.save()
