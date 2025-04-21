@@ -53,7 +53,7 @@ def create_transactions(amount, currency, type, state, external_id=None, sender=
 def create_refund_transactions(transaction_id, amount, external_id):
     transaction_obj = Transactions.objects.get(pk=transaction_id)
     transaction_obj.pk = None
-    transaction_obj.ref = uuid.uuid4
+    transaction_obj.ref = uuid.uuid4()
     transaction_obj.beneficiary = transaction_obj.sender
     transaction_obj.sender = None
     transaction_obj.type = 'refund'
