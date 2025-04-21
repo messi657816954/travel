@@ -93,7 +93,7 @@ class DeleteBankDetailsView(APIView):
         except BankDetails.DoesNotExist:
             return Response({"message": "Coordonnées introuvables."}, status=status.HTTP_404_NOT_FOUND)
 
-        if request.user.id != bank_detail.user_id:
+        if request.user.id != bank_detail.user_id.id:
             return Response({"message": "Accès non autorisé."}, status=status.HTTP_403_FORBIDDEN)
 
         bank_detail.delete()
