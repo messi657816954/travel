@@ -60,7 +60,8 @@ def create_refund_transactions(transaction_id, amount, external_id):
     transaction_obj.amount = amount
     transaction_obj.state = 'completed'
     transaction_obj.external_id = external_id
-    return transaction_obj.save()
+    transaction_obj.save()
+    return transaction_obj
 
 class TransactionCreateView(APIView):
     permission_classes = [IsAuthenticated]
