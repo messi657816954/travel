@@ -249,7 +249,7 @@ def cancelReservation(request, reservation):
         )
         try:
             payload = {
-                "paymentIntentId": transaction.external_id
+                "paymentIntentId": transaction[0].external_id
             }
             response = request.post(SPRING_BOOT_CANCEL_PAYMENT_URL, json=payload, timeout=10)
         except Reservation.DoesNotExist:
@@ -273,10 +273,10 @@ def cancelReservation(request, reservation):
             plain_message=f"La réservation {reservation.reference} sur votre annonce a été annulée."
         )
         try:
-            refund_transaction = create_refund_transactions(transaction.id, reservation.montant,
-                                                            transaction.external_id)
+            refund_transaction = create_refund_transactions(transaction[0].id, reservation.montant,
+                                                            transaction[0].external_id)
             payload = {
-                "processingId": transaction.external_id,
+                "processingId": transaction[0].external_id,
                 "transactionId": refund_transaction.ref,
                 "amount": reservation.montant
             }
@@ -289,8 +289,8 @@ def cancelReservation(request, reservation):
     # Annuler la réservation et ajuster les kg disponibles
     reservation.statut = 'CANCEL'
     reservation.save()
-    transaction.state = 'CANCEL'
-    transaction.save()
+    transaction[0].state = 'CANCEL'
+    transaction[0].save()
     annonce.nombre_kg_dispo += reservation.nombre_kg
     annonce.save()
     return 1, 'Réservation annulée avec succès'
