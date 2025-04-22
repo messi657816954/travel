@@ -16,7 +16,7 @@ def saveBAnkDetails(user, payment_method_id) :
         last4 = stripe_payment_method["card"]["last4"]
         provider = stripe_payment_method["card"]["brand"]
         exp_month = stripe_payment_method["card"]["exp_month"]
-        exp_year = stripe_payment_method["card"]["exp_year"][-2:]
+        exp_year = str(stripe_payment_method["card"]["exp_year"])[-2:]
 
         method = BankDetails.objects.create(
             user_id=user,
