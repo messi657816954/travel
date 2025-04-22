@@ -22,7 +22,7 @@ def saveBAnkDetails(user, payment_method_id) :
             user_id=user,
             last4=last4,
             provider=provider,
-            expire_date=f"{exp_month}/{exp_year}",
+            expire_date=f"{exp_month:02}/{exp_year}",
             payment_method_id=payment_method_id
         )
         return {"message": "Méthode enregistrée"}, status.HTTP_201_CREATED
