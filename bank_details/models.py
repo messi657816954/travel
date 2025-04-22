@@ -19,6 +19,7 @@ class BankDetails(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     last4 = models.CharField(max_length=4)
     provider = models.CharField(max_length=50, null=True, blank=True)
+    expire_date = models.CharField(max_length=5, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     _payment_method_id = models.TextField(unique=True, null=True, blank=True)
 
@@ -31,4 +32,4 @@ class BankDetails(models.Model):
         self._payment_method_id = encrypt_data(value)
 
     def __str__(self):
-        return f"CB ****{self.last4}"
+        return f"{self.provider} ****{self.last4}"

@@ -15,11 +15,14 @@ def saveBAnkDetails(user, payment_method_id) :
         stripe_payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
         last4 = stripe_payment_method["card"]["last4"]
         provider = stripe_payment_method["card"]["brand"]
+        exp_month = stripe_payment_method["card"]["exp_month"]
+        exp_year = stripe_payment_method["card"]["exp_year"][-2:]
 
         method = BankDetails.objects.create(
             user_id=user,
             last4=last4,
             provider=provider,
+            expire_date=f"{exp_month}/{exp_year}",
             payment_method_id=payment_method_id
         )
         return {"message": "Méthode enregistrée"}, status.HTTP_201_CREATED
@@ -38,7 +41,7 @@ class ListPaymentMethodsBaseView(APIView):
         data = []
         if use_type == "in":
             user_bank_details = BankDetails.objects.filter(user_id=request.user.id)
-            data += [{"code": userBank.id, "name": str(userBank)} for userBank in user_bank_details]
+            data += [{"name": str(userBank), "expire_date": userBank.expire_date} for userBank in user_bank_details]
         use_values = ["both", use_type] if use_type in ["in", "out"] else ["both"]
 
         payment_methods = self.get_payment_methods(use_values)
@@ -75,6 +78,7 @@ class ListBankDetailsView(APIView):
         data = [
             {
                 "name": str(method),
+                "expire_date": method.expire_date,
             }
             for method in methods
         ]

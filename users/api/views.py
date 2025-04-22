@@ -343,10 +343,8 @@ class UserDetailClientView(APIView):
             user_obj = request.user
             data_serializer = self.serializer_class(user_obj)
             cpte = Compte.objects.get(user=request.user)
-            compte_serializer = CompteSerializer(cpte)
             response_data = {
-                **data_serializer.data,  # Données de l'utilisateur
-                'compte': compte_serializer.data,
+                **data_serializer.data,
             }
             res = reponses(success=1, results=response_data)
             return Response(res)
