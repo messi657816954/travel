@@ -191,10 +191,15 @@ class ConfirmReservationByAnnonceurAPIView(APIView):
             reservation.save()
 
             try:
+                auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+                if not auth_header.startswith("Bearer "):
+                    return Response({"detail": "Token manquant"}, status=401)
+
                 payload = {
                     "paymentIntentId": transaction.external_id
                 }
-                response = requests.post(SPRING_BOOT_CAPTURE_PAYMENT_URL, json=payload, timeout=10)
+                response = requests.post(SPRING_BOOT_CAPTURE_PAYMENT_URL,
+                headers={"Authorization": auth_header}, json=payload, timeout=10)
             except Reservation.DoesNotExist:
                 return Response(reponses(success=0, error_msg='Erreur lors de la confirmation du paiement'))
 
@@ -238,60 +243,68 @@ def cancelReservation(request, reservation):
     transaction = Transactions.objects.filter(reservation__pk=reservation.pk,
                                               type='transfer').exclude(state__in=['canceled', 'failed'])
 
-    ctx = {'reservation_ref': reservation.reference}
-    if reservation.statut in ['VALIDATE']:
-        notify_user(
-            user=reservation.user,
-            subject="Réservation annulée",
-            template_name='reservation_cancelled.html',
-            context=ctx,
-            plain_message=f"Votre réservation {reservation.reference} a été annulée."
-        )
-        try:
-            payload = {
-                "paymentIntentId": transaction[0].external_id
-            }
-            response = requests.post(SPRING_BOOT_CANCEL_PAYMENT_URL, json=payload, timeout=10)
-        except Reservation.DoesNotExist:
-            return Response(reponses(success=0, error_msg='Erreur'))
-    elif reservation.statut in ['CONFIRM']:
-        #fees = Decimal("5")
-        #fees_transaction = create_transactions(fees, transaction.currency_to_collect, 'fees', 'completed', None,
-                                              # reservation.annonce.user_id, None, reservation.id)
-        notify_user(
-            user=reservation.user,
-            subject="Réservation annulée",
-            template_name='reservation_cancelled.html',
-            context=ctx,
-            plain_message=f"Votre réservation {reservation.reference} a été annulée."
-        )
-        notify_user(
-            user=annonce.user_id,
-            subject="Réservation annulée",
-            template_name='reservation_cancelled_annonceur.html',
-            context=ctx,
-            plain_message=f"La réservation {reservation.reference} sur votre annonce a été annulée."
-        )
-        try:
-            refund_transaction = create_refund_transactions(transaction[0].id, reservation.montant,
-                                                            transaction[0].external_id)
-            payload = {
-                "processingId": transaction[0].external_id,
-                "transactionId": str(refund_transaction.ref),
-                "amount": str(reservation.montant)
-            }
-            response = requests.post(SPRING_BOOT_REFUND_PAYMENT_URL, json=payload, timeout=10)
-            refund_transaction.save()
-        except requests.exceptions.RequestException:
-            return 0, 'Réservation annulée avec succès'
-    else:
-        return 0,'You can not cancel a reservation received, delivered or completed'
+    auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+    if not auth_header.startswith("Bearer "):
+        return Response({"detail": "Token manquant"}, status=401)
+
+    if len(transaction) > 0:
+        ctx = {'reservation_ref': reservation.reference}
+        if reservation.statut in ['VALIDATE']:
+            notify_user(
+                user=reservation.user,
+                subject="Réservation annulée",
+                template_name='reservation_cancelled.html',
+                context=ctx,
+                plain_message=f"Votre réservation {reservation.reference} a été annulée."
+            )
+            try:
+                payload = {
+                    "paymentIntentId": transaction[0].external_id
+                }
+                response = requests.post(SPRING_BOOT_CANCEL_PAYMENT_URL,
+                headers={"Authorization": auth_header}, json=payload, timeout=10)
+            except requests.exceptions.RequestException:
+                return 0, 'Une erreur est survenue'
+        elif reservation.statut in ['CONFIRM']:
+            #fees = Decimal("5")
+            #fees_transaction = create_transactions(fees, transaction.currency_to_collect, 'fees', 'completed', None,
+                                                  # reservation.annonce.user_id, None, reservation.id)
+            notify_user(
+                user=reservation.user,
+                subject="Réservation annulée",
+                template_name='reservation_cancelled.html',
+                context=ctx,
+                plain_message=f"Votre réservation {reservation.reference} a été annulée."
+            )
+            notify_user(
+                user=annonce.user_id,
+                subject="Réservation annulée",
+                template_name='reservation_cancelled_annonceur.html',
+                context=ctx,
+                plain_message=f"La réservation {reservation.reference} sur votre annonce a été annulée."
+            )
+            try:
+                refund_transaction = create_refund_transactions(transaction[0].id, reservation.montant,
+                                                                transaction[0].external_id)
+                payload = {
+                    "processingId": transaction[0].external_id,
+                    "transactionId": str(refund_transaction.ref),
+                    "amount": str(reservation.montant)
+                }
+                response = requests.post(SPRING_BOOT_REFUND_PAYMENT_URL,
+                headers={"Authorization": auth_header}, json=payload, timeout=10)
+                refund_transaction.save()
+            except requests.exceptions.RequestException:
+                return 0, 'Une erreur est survenue'
+        else:
+            return 0,'You can not cancel a reservation received, delivered or completed'
+
+        transaction[0].state = 'Canceled'
+        transaction[0].save()
 
     # Annuler la réservation et ajuster les kg disponibles
     reservation.statut = 'CANCEL'
     reservation.save()
-    transaction[0].state = 'Canceled'
-    transaction[0].save()
     annonce.nombre_kg_dispo += reservation.nombre_kg
     annonce.save()
     return 1, 'Réservation annulée avec succès'

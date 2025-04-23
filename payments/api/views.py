@@ -32,7 +32,12 @@ class InitiatePaymentView(APIView):
         }
 
         try:
-            response = requests.post(SPRING_BOOT_PAYMENT_URL, json=payload, timeout=10)
+            auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+            if not auth_header.startswith("Bearer "):
+                return Response({"detail": "Token manquant"}, status=401)
+
+            response = requests.post(SPRING_BOOT_PAYMENT_URL,
+            headers={"Authorization": auth_header}, json=payload, timeout=10)
             response_data = response.json()
 
             if response_data.get("status") == 200:
@@ -56,7 +61,12 @@ class SetupIntendPaymentView(APIView):
         }
 
         try:
-            response = requests.post(SPRING_BOOT_SETUP_PAYMENT_URL, json=payload, timeout=10)
+            auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+            if not auth_header.startswith("Bearer "):
+                return Response({"detail": "Token manquant"}, status=401)
+
+            response = requests.post(SPRING_BOOT_SETUP_PAYMENT_URL,
+            headers={"Authorization": auth_header}, json=payload, timeout=10)
             response_data = response.json()
 
             if response_data.get("status") == 200:

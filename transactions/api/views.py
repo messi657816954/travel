@@ -79,11 +79,16 @@ class TransactionCreateView(APIView):
         reservation.date_paiement = datetime.datetime.now()
         reservation.save()
         try:
+            auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+            if not auth_header.startswith("Bearer "):
+                return Response({"detail": "Token manquant"}, status=401)
+
             params = {
                 "processingId": request.data["external_id"],
                 "transactionId": transaction.ref
             }
-            response = requests.post(SPRING_BOOT_UPDATE_PAYMENT_URL, params=params, timeout=10)
+            response = requests.post(SPRING_BOOT_UPDATE_PAYMENT_URL,
+            headers={"Authorization": auth_header}, params=params, timeout=10)
         except requests.exceptions.RequestException:
             return Response(reponses(success=0, error_msg='Erreur de communication avec le service de paiement'), status=500)
 
