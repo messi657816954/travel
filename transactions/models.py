@@ -40,6 +40,7 @@ class Transactions(models.Model):
         default=0.00,
         validators=[MinValueValidator(0.00)]  # Permet 0 pour amount_to_collect
     )
+    commission = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     currency = models.ForeignKey(Currency, on_delete=models.CASCADE, null=True, blank=True, related_name='currency')
     currency_to_collect = models.ForeignKey(Currency, on_delete=models.CASCADE, null=True, blank=True, related_name='currency_to_collect')
     announce = models.ForeignKey(

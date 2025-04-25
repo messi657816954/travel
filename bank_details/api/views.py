@@ -5,7 +5,7 @@ from django.db import transaction
 import stripe
 from rest_framework import status
 from bank_details.models import BankDetails, PaymentMethods
-from users.utils import STRIPE_API_KEY
+from users.utils import STRIPE_API_KEY, reponses
 
 stripe.api_key = STRIPE_API_KEY
 
@@ -47,7 +47,7 @@ class ListPaymentMethodsBaseView(APIView):
         payment_methods = self.get_payment_methods(use_values)
         data += [{"code": method.code, "name": method.name} for method in payment_methods]
 
-        return Response(data, status=status.HTTP_200_OK)
+        return Response(reponses(success=1, results=data), status=status.HTTP_200_OK)
 
 class ListPaymentMethodsView(ListPaymentMethodsBaseView):
     def get(self, request, *args, **kwargs):
@@ -77,12 +77,13 @@ class ListBankDetailsView(APIView):
         methods = BankDetails.objects.filter(user_id=user)
         data = [
             {
-                "name": str(method),
+                "provider": method.provider,
+                "card_number": f"****{method.last4}",
                 "expire_date": method.expire_date,
             }
             for method in methods
         ]
-        return Response(data, status=status.HTTP_200_OK)
+        return Response(reponses(success=1, results=data), status=status.HTTP_200_OK)
 
 class DeleteBankDetailsView(APIView):
     permission_classes = [IsAuthenticated]

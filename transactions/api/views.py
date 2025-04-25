@@ -3,9 +3,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db import transaction
+from django.db.models import Q
 import stripe, requests, datetime, uuid
 from django.conf import settings
 from rest_framework import status
+from decimal import Decimal
 
 from preferences.models import UserPreference
 from transactions.models import Transactions
@@ -35,11 +37,13 @@ def set_description(transaction):
     return departure_date + " " + str(nb_kg) + "Kg " + departure + " -> " + destination
 
 def create_transactions(amount, currency, type, state, external_id=None, sender=None, beneficiary=None, reservation=None):
+    com = type == "transfer" and amount * Decimal(0.30) or 0
     transaction = Transactions.objects.create(
         type = type,
         state = state,
         amount = amount,
-        amount_to_collect = amount,
+        commission = com,
+        amount_to_collect = type == "transfer" and amount - com or 0,
         currency = currency,
         currency_to_collect = currency,
         announce = reservation and reservation.annonce,
@@ -56,6 +60,9 @@ def create_refund_transactions(transaction_id, amount, external_id):
     transaction_obj.ref = uuid.uuid4()
     transaction_obj.beneficiary = transaction_obj.sender
     transaction_obj.sender = None
+    transaction_obj.amount_to_collect = None
+    transaction_obj.currency_to_collect = None
+    transaction_obj.commission = None
     transaction_obj.type = 'refund'
     transaction_obj.amount = amount
     transaction_obj.state = 'completed'
@@ -68,7 +75,6 @@ class TransactionCreateView(APIView):
     def post(self, request):
         amount = request.data["amount"]
         reservation_id = request.data["reservation"]
-        payment_method_save = request.data.get("method_save")
         user_pref = UserPreference.objects.filter(user_id=request.user.id).first()
         currency = user_pref and user_pref.currency or Currency.objects.get(code='EUR')
         try:
@@ -196,3 +202,25 @@ class UserBalanceAccountView(APIView):
             "forecast": (total_in + total_pending) - total_out
         }
         return Response(reponses(success=1, results={'balance_info': data}))
+
+class TransactionDetailAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, transaction_id):
+        try:
+            return Transactions.objects.get(Q(pk=transaction_id) & (Q(sender=self.request.user) | Q(beneficiary=self.request.user)))
+        except Transactions.DoesNotExist:
+            return None
+
+    def get(self, request, *args, **kwargs):
+        transaction = self.get_object(request.query_params['transaction_id'])
+        if not transaction:
+            res = reponses(success=0, error_msg="Transaction not found.")
+            return Response(res)
+        serializer = TransactionSerializer(transaction)
+
+        response_data = {
+            **serializer.data,
+        }
+        res = reponses(success=1, results=response_data, error_msg='')
+        return Response(res)
