@@ -38,14 +38,15 @@ class ListPaymentMethodsBaseView(APIView):
 
     def get(self, request, *args, **kwargs):
         use_type = kwargs.get("use_type")
-        data = []
+        list_bank_details = []
         if use_type == "in":
             user_bank_details = BankDetails.objects.filter(user_id=request.user.id)
-            data += [{"provider": userBank.provider, "name": f"****{userBank.last4}", "expire_date": userBank.expire_date} for userBank in user_bank_details]
+            list_bank_details = [{"provider": userBank.provider, "card_number": f"****{userBank.last4}", "expire_date": userBank.expire_date} for userBank in user_bank_details]
         use_values = ["both", use_type] if use_type in ["in", "out"] else ["both"]
 
         payment_methods = self.get_payment_methods(use_values)
-        data += [{"code": method.code, "name": method.name} for method in payment_methods]
+        list_payment_methods = [{"code": method.code, "name": method.name} for method in payment_methods]
+        data = {"list_bank_details": list_bank_details, "list_payment_methods": list_payment_methods}
 
         return Response(reponses(success=1, results=data), status=status.HTTP_200_OK)
 

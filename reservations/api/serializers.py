@@ -12,3 +12,9 @@ class ReservationSerializer(serializers.ModelSerializer):
         model = Reservation
         fields = '__all__'
         read_only_fields = ('date_publication', 'published', 'active','code_reception','code_livraison')
+
+class ReservationDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Reservation
+        fields = '__all__'
+        read_only_fields = ('date_publication', 'published', 'active','code_reception','code_livraison')
