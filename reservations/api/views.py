@@ -15,7 +15,7 @@ from .serializers import ReservationSerializer
 from django.db import transaction
 from annonces.models import Reservation
 from django.core.paginator import Paginator
-from transactions.api.views import create_refund_transactions, create_transactions
+from transactions.api.views import create_refund_transactions, create_transactions, set_description
 import requests
 
 
@@ -286,6 +286,7 @@ def cancelReservation(request, reservation):
             try:
                 refund_transaction = create_refund_transactions(transaction[0].id, reservation.montant,
                                                                 transaction[0].external_id)
+                refund_transaction.description = set_description(refund_transaction)
                 payload = {
                     "processingId": transaction[0].external_id,
                     "transactionId": str(refund_transaction.ref),

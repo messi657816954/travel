@@ -71,6 +71,7 @@ class Transactions(models.Model):
         blank=True,
         related_name='received_transactions'  # Ajout de related_name
     )
+    description = models.TextField(max_length=300, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

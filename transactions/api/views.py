@@ -82,6 +82,8 @@ class TransactionCreateView(APIView):
         except Reservation.DoesNotExist:
             return Response(reponses(success=0, error_msg='Reservation not found'))
         transaction = create_transactions(amount, currency, "transfer", "pending", request.data["external_id"], request.user, reservation.annonce.user_id, reservation)
+        transaction.description = set_description(transaction)
+        transaction.save()
         reservation.date_paiement = datetime.datetime.now()
         reservation.save()
         try:
