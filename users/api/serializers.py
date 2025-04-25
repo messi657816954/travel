@@ -75,11 +75,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
                     lastname=self.validated_data['lastname'],
                     user_name=self.validated_data['user_name'],
                     is_active=True,
-                    phone=self.validated_data['phone'],
-                    address=self.validated_data['address'],
-                    city=self.validated_data['city'],
-                    zip_code=self.validated_data['zip_code'],
-                    profile_picture=self.validated_data.get('profile_picture', None)
+                    phone=self.validated_data['phone']
                     )
         user.set_password(self.validated_data['password'],)
         user.pays=pays
