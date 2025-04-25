@@ -50,8 +50,8 @@ class Annonce(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if self.commission == 0 or self.revenue_transporteur == 0:
-            self.commission = self.cout_total * Decimal('0.25')
-            self.revenue_transporteur = self.cout_total * Decimal('0.75')
+            self.commission = self.cout_total * Decimal('0.30')
+            self.revenue_transporteur = self.cout_total * Decimal('0.70')
         super().save(*args, **kwargs)
 
 

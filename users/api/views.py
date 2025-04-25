@@ -342,7 +342,6 @@ class UserDetailClientView(APIView):
         try:
             user_obj = request.user
             data_serializer = self.serializer_class(user_obj)
-            cpte = Compte.objects.get(user=request.user)
             response_data = {
                 **data_serializer.data,
             }

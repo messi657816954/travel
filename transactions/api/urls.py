@@ -1,10 +1,11 @@
 from django.urls import path
 from transactions.api.views import (TransactionCreateView, TransactionUpdateView, ListUserAccountTransactionsView,
-                                    ListUserPendingTransactionsView, ListUserTransactionsView, UserBalanceAccountView)
+                ListUserPendingTransactionsView, ListUserTransactionsView, UserBalanceAccountView,TransactionDetailAPIView)
 
 urlpatterns = [
     path('transaction/save/', TransactionCreateView.as_view(), name='add-transactions'),
     path('transaction/update/', TransactionUpdateView.as_view(), name='update-transaction'),
+    path('transaction/detail/', TransactionDetailAPIView.as_view(), name='detail-transaction'),
 
     path('movement/list/', ListUserAccountTransactionsView.as_view(), name='user-account-movement-list'),
     path('transfer/list/', ListUserTransactionsView.as_view(), name='user-transfer-list'),
