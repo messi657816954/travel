@@ -562,7 +562,9 @@ class InitPhoneOtpAPIView(APIView):
             # todo: envoyer code par sms request.data['phone']
             send_otp(code, user[0].phone)
 
-            res = reponses(success=1, results="Code envoyé par sms avec succès", error_msg='')
+            res = reponses(success=1, results={"code": code, "msg": "Code envoyé par sms avec succès"}, error_msg='')
+
+            #res = reponses(success=1, results="Code envoyé par sms avec succès", error_msg='')
             return Response(res)
 
         else:
