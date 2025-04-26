@@ -274,26 +274,7 @@ class Logout(APIView):
         res = reponses(success=1, results="Déconnexion effectué avec Succès".encode('utf8'),error_msg='')
         return Response(res)
 
-# -----------------------------------------------Fin mise àjour des informations des utilisateurs
-
-
-    def post(self, request, *args, **kwargs):
-        self.object = request.user
-        serializer = ChangePasswordSerializer(data=request.data)
-        if serializer.is_valid():
-            password = serializer.data.get("new_password")
-            if not self.object.check_password(serializer.data.get("old_password")):
-                res = reponses(success=0, results=[],error_msg='Mauvais password! Entrer le bon mot de passe')
-                return Response(res)
-
-            self.object.set_password(password)
-            self.object.change_password = True
-            self.object.save()
-            res = reponses(success=1, results="Password a été changé avec succès".encode('utf8'),error_msg='')
-            return Response(res)
-        res = reponses(success=1, error_msg=serializer.errors)
-        return Response(res)
-
+# -----------------------------------------------Fin mise àjour des informations des utilisateurs*
 
 
 class PerformForgotPasswordAPIView(APIView):
