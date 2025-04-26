@@ -125,7 +125,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'firstname', 'lastname', 'user_name', 'phone', 'address', 'city', 'zip_code', 'profile_picture', 'is_phone_verify', 'pays_details', 'moyenne_notes', 'avis_count']
+        fields = ['id', 'email', 'firstname', 'lastname', 'user_name', 'phone', 'address', 'city', 'zip_code', 'profile_picture', 'is_phone_verify', 'is_identity_check', 'pays_details', 'moyenne_notes', 'avis_count']
 
     def get_moyenne_notes(self, obj):
         """Récupère la moyenne des avis reçus."""
