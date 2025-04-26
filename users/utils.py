@@ -3,8 +3,10 @@ import string
 from django.conf import settings
 import datetime
 
-from django.core.mail import send_mail, EmailMessage
+from django.core.mail import send_mail, EmailMessage, EmailMultiAlternatives
 from twilio.rest import Client
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 
 from cryptography.fernet import Fernet
 
@@ -235,14 +237,15 @@ def generate_reference():
 
 
 def send_email(object, body, email_to):
+    text_content = strip_tags(body)
 
-    mail = EmailMessage(
+    mail = EmailMultiAlternatives(
         object,
-        body,
+        text_content,
         settings.EMAIL_HOST_USER,
         [email_to]
     )
-    mail.content_subtype = "html"
+    mail.attach_alternative(body, "text/html")
     mail.send(fail_silently=True)
 
 def send_otp(code, phone_to):
@@ -295,13 +298,14 @@ def notify_user(user, subject, template_name=None, context=None, plain_message=N
     if communication_method in ['email', 'none'] and template_name and context:
         # Notification par email (par défaut pour 'none')
         message = render_to_string(template_name, context)
-        mail = EmailMessage(
+        text_content = strip_tags(message)
+        mail = EmailMultiAlternatives(
             subject,
-            message,
+            text_content,
             settings.EMAIL_HOST_USER,
             [user.email]
         )
-        mail.content_subtype = "html"
+        mail.attach_alternative(message, "text/html")
         mail.send(fail_silently=True)
 
     elif communication_method == 'sms' and plain_message:

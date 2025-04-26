@@ -4,7 +4,7 @@ from django.db.models import Avg
 from rest_framework.generics import UpdateAPIView, DestroyAPIView
 
 from annonces.models import Reservation
-from .serializers import RegistrationSerializer, VerifyOTPSerializer, MyTokenObtainPairSerializer, \
+from .serializers import RegistrationSerializer, VerifyOTPSerializer, MyTokenObtainPairSerializer, ChangePasswordSerializer, \
     ChangePasswordSerializer, UserDetailSerializer, CompteSerializer, MoyenPaiementSerializer, UpdateSerializer
 from rest_framework import generics,status
 from rest_framework.views import APIView
@@ -79,6 +79,30 @@ class MyTokenObtainPairView(TokenObtainPairView):
         }
         res = reponses(success=1, results=custom_response_data, error_msg='')
         return Response(res)
+
+class ChangePasswordView(generics.UpdateAPIView):
+    serializer_class = ChangePasswordSerializer
+    model = User
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, queryset=None):
+        return self.request.user
+
+    def update(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+
+        if serializer.is_valid():
+            # Vérifier l'ancien mot de passe
+            if not self.object.check_password(serializer.data.get("old_password")):
+                return Response({"old_password": ["Mot de passe incorrect."]}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Définir le nouveau mot de passe
+            self.object.set_password(serializer.data.get("new_password"))
+            self.object.save()
+            return Response({"detail": "Mot de passe mis à jour avec succès."}, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UpdateProfilePictureAPIView(APIView):

@@ -19,6 +19,7 @@ urlpatterns = [
     path('logout/', LogoutBlacklistTokenUpdateView.as_view(), name='logout'),
     path('picture/', UpdateProfilePictureAPIView.as_view(), name='upload_picture'),
 
+    path('user/change-password/', ChangePasswordView.as_view(), name='change-password'),
     path('user/update', UpdateUserView.as_view(), name='User-update'),
     path('user/detail', UserDetailClientView.as_view(), name='User-Detail'),
     path('register/init', InitRegistrationAPIView.as_view(), name='Init-Registration'),
