@@ -80,6 +80,30 @@ class MyTokenObtainPairView(TokenObtainPairView):
         res = reponses(success=1, results=custom_response_data, error_msg='')
         return Response(res)
 
+class ChangePasswordView(generics.UpdateAPIView):
+    serializer_class = ChangePasswordSerializer
+    model = User
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, queryset=None):
+        return self.request.user
+
+    def update(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+
+        if serializer.is_valid():
+            # Vérifier l'ancien mot de passe
+            if not self.object.check_password(serializer.data.get("old_password")):
+                return Response(reponses(success=0, error_msg={"old_password": ["Mot de passe incorrect."]}), status=status.HTTP_400_BAD_REQUEST)
+
+            # Définir le nouveau mot de passe
+            self.object.set_password(serializer.data.get("new_password"))
+            self.object.save()
+            return Response(reponses(success=1, results={"detail": "Mot de passe mis à jour avec succès."}), status=status.HTTP_200_OK)
+
+        return Response(reponses(success=0, error_msg=serializer.errors), status=status.HTTP_400_BAD_REQUEST)
+
 
 class UpdateProfilePictureAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -251,13 +275,6 @@ class Logout(APIView):
         return Response(res)
 
 # -----------------------------------------------Fin mise àjour des informations des utilisateurs
-
-
-class ChangePasswordView(APIView):
-    serializer_class = ChangePasswordSerializer
-    model = User
-    permission_classes = [IsAuthenticated]
-
 
 
     def post(self, request, *args, **kwargs):

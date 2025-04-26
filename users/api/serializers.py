@@ -5,6 +5,7 @@ from users.models import User, Compte, MoyenPaiementUser
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from commons.api.serializers import PaysSerializer
+from django.contrib.auth.password_validation import validate_password
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -59,6 +60,14 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         return data
 
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+
+    def validate_new_password(self, value):
+        validate_password(value)
+        return value
+
 class RegistrationSerializer(serializers.ModelSerializer):
     # password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
     pays_details = PaysSerializer(source='pays', read_only=True)
@@ -108,12 +117,6 @@ class CompteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Compte
         fields = '__all__'
-
-
-
-class ChangePasswordSerializer(serializers.Serializer):
-    old_password = serializers.CharField(required=True)
-    new_password = serializers.CharField(required=True)
 
 
 class UserDetailSerializer(serializers.ModelSerializer):
