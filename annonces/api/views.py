@@ -235,18 +235,14 @@ class AnnoncesListAPIView(APIView):
 
         annonces = Annonce.objects.filter(user_id=request.user)
         if 'page' in request.query_params:
-            pass
             paginator = Paginator(annonces, 5)
             page = request.query_params['page']
             annonces = paginator.get_page(page)
             print(annonces)
             serializer = AnnonceDetailSerializer(annonces, many=True)
             counts = paginator.num_pages
-
-            print('serializer.data', serializer.data)
             res = reponses(success=1, results=serializer.data,num_page=counts)
             return Response(res)
-        annonces = Annonce.objects.filter(user_id=request.user)
         serializer = AnnonceDetailSerializer(annonces, many=True)
         res = reponses(success=1, results=serializer.data, error_msg='')
         return Response(res)
@@ -258,7 +254,7 @@ class AllAnnoncesListAPIView(APIView):
 
     def get(self, request, *args, **kwargs):
 
-        annonces = Annonce.objects.filter(published=True).order_by("-date_publication")
+        annonces = Annonce.objects.filter(published=True, nombre_kg_dispo__gt=0).order_by("-date_publication")
         if 'page' in request.query_params:
             paginator = Paginator(annonces, 5)
             page = request.query_params['page']
@@ -266,7 +262,6 @@ class AllAnnoncesListAPIView(APIView):
             print(annonces)
             serializer = AnnonceDetailSerializer(annonces, many=True)
             counts = paginator.num_pages
-            print('serializer.data', serializer.data)
             res = reponses(success=1, results=serializer.data,num_page=counts)
             return Response(res)
         serializer = AnnonceDetailSerializer(annonces, many=True)
@@ -343,7 +338,7 @@ class AnnonceSearchAPIView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
-        queryset = Annonce.objects.filter(published=True).order_by("-date_publication")
+        queryset = Annonce.objects.filter(published=True, nombre_kg_dispo__gt=0).order_by("-date_publication")
 
         # 🔹 Filtrage par date de départ (optionnel)
         date_depart = request.query_params.get('date_depart', None)

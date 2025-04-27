@@ -15,7 +15,7 @@ from users.models import User, Compte, MoyenPaiementUser, UserEmails
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.shortcuts import get_object_or_404
 
-
+from django.contrib.auth import logout as django_logout
 from django.core.mail import send_mail, EmailMessage
 from users.utils import *
 from django.conf import settings
@@ -72,9 +72,7 @@ class MyTokenObtainPairView(TokenObtainPairView):
         custom_response_data = {
             'access_token': response_data.get('access'),
             'refresh_token': response_data.get('refresh'),
-            'user': response_data.get('user'),  # Ajoutez les infos de l'utilisateur
-            'compte': response_data.get('compte'),  # Ajoutez les infos de l'utilisateur
-            'infos_methode_paiement': response_data.get('infos_methode_paiement'),  # Ajoutez les infos de l'utilisateur
+            'user': response_data.get('user')
 
         }
         res = reponses(success=1, results=custom_response_data, error_msg='')
@@ -255,26 +253,26 @@ class InitRegistrationAPIView(APIView):
 
 
 
-class Logout(APIView):
+class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self,request):
-        print("le user is", request.user.user_name)
-        logger(request, 'Deconnexion de {} sur le webservice : '.format(request.user.user_name))
-        return self.logout(request)
+    def post(self, request):
+        print("Le user est :", request.user.username)
+        return self._perform_logout(request)
 
-
-    def logout(self, request,format=None):
+    def _perform_logout(self, request):
         try:
-            request.user.auth_token.delete()
-        except (AttributeError, ObjectDoesNotExist):
-            res = reponses(success=0, error_msg='Une erreur est survenue pendant la suppression du token')
-            return Response(res)
-        logout(request)
-        res = reponses(success=1, results="Déconnexion effectué avec Succès".encode('utf8'),error_msg='')
-        return Response(res)
+            if hasattr(request.user, 'auth_token'):
+                request.user.auth_token.delete()
+        except ObjectDoesNotExist:
+            res = reponses(success=0, error_msg='Erreur pendant la suppression du token')
+            return Response(res, status=status.HTTP_400_BAD_REQUEST)
 
-# -----------------------------------------------Fin mise àjour des informations des utilisateurs*
+        django_logout(request)
+
+        res = reponses(success=1, results="Déconnexion effectuée avec succès", error_msg='')
+        return Response(res, status=status.HTTP_200_OK)
+
 
 
 class PerformForgotPasswordAPIView(APIView):
@@ -445,13 +443,8 @@ class InitUpdateEmailAPIView(APIView):
             object = "Modification adresse mail"
             add_email_otp(request.data['email'], code)
             send_email(object, message, request.data['email'])
-            res = {
-                'otp': code,
-                'otp_created_at': datetime.now(),
-                'msg': "Code envoyé par email avec succès"
-            }
 
-            res = reponses(success=1, results=res, error_msg='')
+            res = reponses(success=1, results="Code envoyé par email avec succès", error_msg='')
             return Response(res)
 
         else:
@@ -560,9 +553,7 @@ class InitPhoneOtpAPIView(APIView):
             # todo: envoyer code par sms request.data['phone']
             send_otp(code, user[0].phone)
 
-            res = reponses(success=1, results={"code": code, "msg": "Code envoyé par sms avec succès"}, error_msg='')
-
-            #res = reponses(success=1, results="Code envoyé par sms avec succès", error_msg='')
+            res = reponses(success=1, results="Code envoyé par sms avec succès", error_msg='')
             return Response(res)
 
         else:

@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import RegistrationAPIView, VerifyOTPAPIView, LogoutBlacklistTokenUpdateView, MyTokenObtainPairView, \
-    UserDetailClientView, InitRegistrationAPIView, InitForgotPasswordAPIView, \
+    UserDetailClientView, InitRegistrationAPIView, InitForgotPasswordAPIView, LogoutView, \
     ChangePasswordView, PerformForgotPasswordAPIView, MoyenPaiementListCreateAPIView, MoyenPaiementDetailAPIView, \
     InitierPaiementAPIView, PerformOtpAPIView, InitPhoneOtpAPIView, InitUpdateEmailAPIView, UpdateEmailAPIView, \
     UpdatePhoneAPIView, InitUpdatePhoneAPIView, UpdateProfilePictureAPIView,UpdateKycStatusAPIView, UpdateUserView
@@ -16,7 +16,7 @@ urlpatterns = [
     path('login/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
     # path('verify/', VerifyOTPAPIView.as_view(), name='verify-otp'),
     # path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('logout/', LogoutBlacklistTokenUpdateView.as_view(), name='logout'),
+    path('logout/', LogoutView.as_view(), name='logout'),
     path('picture/', UpdateProfilePictureAPIView.as_view(), name='upload_picture'),
 
     path('user/change-password/', ChangePasswordView.as_view(), name='change-password'),

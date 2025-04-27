@@ -183,27 +183,29 @@ class ListUserAccountTransactionsView(APIView):
         ]
         return Response(reponses(success=1, results={'account_transactions': data}))
 
+def get_user_balance_info(user_id):
+    pending_transactions = Transactions.objects.filter(beneficiary=user_id, type='transfer', state='pending')
+    in_transactions = Transactions.objects.filter(beneficiary=user_id, state='completed').exclude(type='refund')
+    out_transactions = Transactions.objects.filter(sender=user_id, type__in=['fees', 'withdraw'])
+
+    total_pending = sum([transaction.amount_to_collect for transaction in pending_transactions])
+    total_in = sum([transaction.amount_to_collect for transaction in in_transactions])
+    total_out = sum([transaction.amount for transaction in out_transactions])
+
+    return {
+        "total_pending": total_pending,
+        "pending_count": len(pending_transactions),
+        "balance": total_in - total_out,
+        "forecast": (total_in + total_pending) - total_out
+    }
 
 class UserBalanceAccountView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         user_id = request.user.id
-        pending_transactions = Transactions.objects.filter(beneficiary=user_id, type='transfer', state='pending')
-        in_transactions = Transactions.objects.filter(beneficiary=user_id, state='completed').exclude(type='refund')
-        out_transactions = Transactions.objects.filter(sender=user_id, type__in=['fees', 'withdraw'])
 
-        total_pending = sum([transaction.amount_to_collect for transaction in pending_transactions])
-        total_in = sum([transaction.amount_to_collect for transaction in in_transactions])
-        total_out = sum([transaction.amount for transaction in out_transactions])
-
-        data = {
-            "total_pending": total_pending,
-            "pending_count": len(pending_transactions),
-            "balance": total_in - total_out,
-            "forecast": (total_in + total_pending) - total_out
-        }
-        return Response(reponses(success=1, results={'balance_info': data}))
+        return Response(reponses(success=1, results={'balance_info': get_user_balance_info(user_id)}))
 
 class TransactionDetailAPIView(APIView):
     permission_classes = [IsAuthenticated]
