@@ -1,0 +1,50 @@
+{% load static %}
+body {
+    font-family: Arial, sans-serif;
+    background: url({% static 'images/backgroundlj.jpg' %}) no-repeat center center/cover;
+    margin: 0;
+    padding: 0;
+}
+.container {
+    width: 100%;
+    max-width: 600px;
+    margin: 20px auto;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: left;
+}
+.header {
+    width: 100%;
+}
+.footer {
+    width: 100%;
+    margin-top: 20px;
+}
+.red-bar {
+    width: 100%;
+    max-width: 600px;
+    height: 6px;
+    background-color: #C00000;
+    top: 0;
+    left: 0;
+}
+.div-space {
+    padding-left: 30px
+}
+.footer-text {
+    font-size: 14px;
+    color: #777;
+}
+
+.welcome-text {
+    font-size: 50px;
+    font-style: italic;
+    font-weight: bold;
+    text-decoration: underline;
+    font-family: 'French Script MT', cursive; /* Remplace par la police exacte si tu la connais */
+    color: #C00000; /* Rouge */
+    transform: rotate(-30deg); /* Inclinaison */
+    display: inline-block;
+    margin: 20px;
+    }

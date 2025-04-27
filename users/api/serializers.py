@@ -18,6 +18,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs):
         # Get credentials
+        from transactions.api.views import get_user_balance_info
         email = attrs.get('email')
         phone = attrs.get('phone')
         password = attrs.get('password')
@@ -51,11 +52,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
             'refresh': str(refresh),
             'access': str(refresh.access_token),
             'user': RegistrationSerializer(user).data,
-            'compte': CompteSerializer(user.compte).data,
-            'infos_methode_paiement': MoyenPaiementSerializer(
-                MoyenPaiementUser.objects.filter(user=user),
-                many=True
-            ).data
+            'balance': get_user_balance_info(user.id)
         }
 
         return data
@@ -73,7 +70,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
     pays_details = PaysSerializer(source='pays', read_only=True)
     class Meta:
         model = User
-        fields =  ['email','firstname','lastname', 'user_name','phone', 'password', 'pays_details', 'address', 'city', 'zip_code', 'pays', 'profile_picture']
+        fields =  ['email','firstname','lastname', 'user_name','phone', 'password', 'pays_details', 'is_phone_verify', 'is_identity_check', 'address', 'city', 'zip_code', 'pays', 'profile_picture']
         extra_kwargs = {
             'password': {'write_only': True}
         }

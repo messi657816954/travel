@@ -27,6 +27,8 @@ class ReserverKilogrammesAPIView(APIView):
             annonce = Annonce.objects.get(id=request.data['annonce_id'])
             if annonce.user_id.id == request.user.id:
                 return Response(reponses(success=0, error_msg='Vous ne pouvez pas faire de réservation sur une annonce que vous avez publié'))
+            if not annonce.published:
+                return Response(reponses(success=0, error_msg='Vous ne pouvez pas faire de réservation sur une annonce non publiée'))
 
             # Calculer la somme des kg réservés (non annulés ni pending)
             reserved_kg = Reservation.objects.filter(
@@ -427,8 +429,16 @@ class ReservationsListAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        moyens = Reservation.objects.filter(user=request.user)
-        serializer = ReservationSerializer(moyens, many=True)
+        reservations = Reservation.objects.filter(user=request.user)
+        if 'page' in request.query_params:
+            paginator = Paginator(reservations, 5)
+            page = request.query_params['page']
+            reservations = paginator.get_page(page)
+            serializer = ReservationSerializer(reservations, many=True)
+            counts = paginator.num_pages
+            res = reponses(success=1, results=serializer.data,num_page=counts)
+            return Response(res)
+        serializer = ReservationSerializer(reservations, many=True)
         res = reponses(success=1, results=serializer.data, error_msg='')
         return Response(res)
 
@@ -475,9 +485,9 @@ class ReservationsListByAnnonceAPIView(APIView):
 
     def get(self, request, *args, **kwargs):
         if 'page' in request.query_params or 'annonce_id' in request.query_params:
-            moyens = Reservation.objects.filter(annonce__pk=request.query_params['annonce_id'])
+            moyens = Reservation.objects.filter(annonce__pk=request.query_params['annonce_id']).exclude(state__in=['PENDING', 'CANCEL'])
             paginator = Paginator(moyens, 5)
-            page = request.query_params['page']
+            page = request.query_params.get('page', 1)
             moyens = paginator.get_page(page)
             serializer = ReservationSerializer(moyens, many=True)
             counts = paginator.num_pages
