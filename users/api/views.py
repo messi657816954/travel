@@ -72,7 +72,8 @@ class MyTokenObtainPairView(TokenObtainPairView):
         custom_response_data = {
             'access_token': response_data.get('access'),
             'refresh_token': response_data.get('refresh'),
-            'user': response_data.get('user')
+            'user': response_data.get('user'),
+            'balance': response_data.get('balance')
 
         }
         res = reponses(success=1, results=custom_response_data, error_msg='')
