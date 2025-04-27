@@ -6,6 +6,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from commons.api.serializers import PaysSerializer
 from django.contrib.auth.password_validation import validate_password
+from transactions.api.views import get_user_balance_info
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
