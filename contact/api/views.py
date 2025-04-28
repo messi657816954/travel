@@ -20,7 +20,7 @@ class CreateContactUserAPIView(APIView):
     def post(self, request, *args, **kwargs):
 
         try:
-            contact = ContactUser.object.get(email=request.data['email'])
+            contact = ContactUser.objects.get(email=request.data['email'])
             contact.last_msg_date = timezone.now()
         except ContactUser.DoesNotExist:
             contact = {
