@@ -183,14 +183,7 @@ class ConfirmReservationByAnnonceurAPIView(APIView):
         try:
             reservation = Reservation.objects.get(id=request.query_params['reservation_id'])
             annonce = Annonce.objects.get(id=reservation.annonce.pk)
-            transaction = Transactions.objects.filter(reservation__pk=reservation.pk,
-                                                      type='transfer').exclude(state__in=['canceled', 'failed'])
-
-            # Générer le code de réception
-            code_reception = generate_password()
-            reservation.code_reception = code_reception
-            reservation.statut = 'CONFIRM'
-            reservation.save()
+            transaction = Transactions.objects.filter(reservation__pk=reservation.pk, type='transfer', state='paid')
 
             try:
                 auth_header = request.META.get("HTTP_AUTHORIZATION", "")
@@ -198,12 +191,21 @@ class ConfirmReservationByAnnonceurAPIView(APIView):
                     return Response({"detail": "Token manquant"}, status=401)
 
                 payload = {
-                    "paymentIntentId": transaction.external_id
+                    "paymentIntentId": transaction.external_id,
+                    "transactionId": transaction.ref
                 }
                 response = requests.post(SPRING_BOOT_CAPTURE_PAYMENT_URL,
                 headers={"Authorization": auth_header}, json=payload, timeout=10)
             except Reservation.DoesNotExist:
                 return Response(reponses(success=0, error_msg='Erreur lors de la confirmation du paiement'))
+
+            # Générer le code de réception
+            code_reception = generate_password()
+            reservation.code_reception = code_reception
+            transaction.state = 'pending'
+            transaction.save()
+            reservation.statut = 'CONFIRM'
+            reservation.save()
 
             # Partie mise à jour : Notification
             ### Début de la mise en évidence ###
@@ -242,8 +244,7 @@ class CancelReservationByAnnonceurAPIView(APIView):
 
 def cancelReservation(request, reservation):
     annonce = Annonce.objects.get(id=reservation.annonce.pk)
-    transaction = Transactions.objects.filter(reservation__pk=reservation.pk,
-                                              type='transfer').exclude(state__in=['canceled', 'failed'])
+    transaction = Transactions.objects.filter(reservation__pk=reservation.pk, type='transfer', state__in=['paid', 'pending'])
 
     auth_header = request.META.get("HTTP_AUTHORIZATION", "")
     if not auth_header.startswith("Bearer "):
@@ -302,7 +303,7 @@ def cancelReservation(request, reservation):
         else:
             return 0,'You can not cancel a reservation received, delivered or completed'
 
-        transaction[0].state = 'Canceled'
+        transaction[0].state = 'canceled'
         transaction[0].save()
 
     # Annuler la réservation et ajuster les kg disponibles
@@ -485,7 +486,7 @@ class ReservationsListByAnnonceAPIView(APIView):
 
     def get(self, request, *args, **kwargs):
         if 'page' in request.query_params or 'annonce_id' in request.query_params:
-            moyens = Reservation.objects.filter(annonce__pk=request.query_params['annonce_id']).exclude(state__in=['PENDING', 'CANCEL'])
+            moyens = Reservation.objects.filter(annonce__pk=request.query_params['annonce_id']).exclude(statut__in=['PENDING', 'CANCEL'])
             paginator = Paginator(moyens, 5)
             page = request.query_params.get('page', 1)
             moyens = paginator.get_page(page)

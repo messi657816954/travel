@@ -74,31 +74,48 @@ class TransactionCreateView(APIView):
 
     def post(self, request):
         amount = request.data["amount"]
-        reservation_id = request.data["reservation"]
         user_pref = UserPreference.objects.filter(user_id=request.user.id).first()
         currency = user_pref and user_pref.currency or Currency.objects.get(code='EUR')
-        try:
-            reservation = Reservation.objects.get(pk=reservation_id)
-        except Reservation.DoesNotExist:
-            return Response(reponses(success=0, error_msg='Reservation not found'))
-        transaction = create_transactions(amount, currency, "transfer", "pending", request.data["external_id"], request.user, reservation.annonce.user_id, reservation)
+        transaction_type = request.query_params.get('type', None)
+        beneficiary = reservation = sender = None
+        if transaction_type is None:
+            reservation_id = request.data["reservation"]
+            try:
+                reservation = Reservation.objects.get(pk=reservation_id)
+                beneficiary = reservation.annonce.user_id
+                sender = request.user
+                transaction_type = 'transfer'
+            except Reservation.DoesNotExist:
+                return Response(reponses(success=0, error_msg='Reservation not found'))
+        if transaction_type == 'deposit':
+            beneficiary = request.user
+        state = transaction_type == 'transfer' and 'paid' or 'pending'
+        transaction = create_transactions(amount,
+                                          currency,
+                                          transaction_type,
+                                          state,
+                                          request.data["external_id"],
+                                          sender,
+                                          beneficiary,
+                                          reservation)
         transaction.description = set_description(transaction)
         transaction.save()
         reservation.date_paiement = datetime.datetime.now()
         reservation.save()
-        try:
-            auth_header = request.META.get("HTTP_AUTHORIZATION", "")
-            if not auth_header.startswith("Bearer "):
-                return Response({"detail": "Token manquant"}, status=401)
+        if transaction_type is not None:
+            try:
+                auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+                if not auth_header.startswith("Bearer "):
+                    return Response({"detail": "Token manquant"}, status=401)
 
-            params = {
-                "processingId": request.data["external_id"],
-                "transactionId": transaction.ref
-            }
-            response = requests.post(SPRING_BOOT_UPDATE_PAYMENT_URL,
-            headers={"Authorization": auth_header}, params=params, timeout=10)
-        except requests.exceptions.RequestException:
-            return Response(reponses(success=0, error_msg='Erreur de communication avec le service de paiement'), status=500)
+                params = {
+                    "processingId": request.data["external_id"],
+                    "transactionId": transaction.ref
+                }
+                response = requests.post(SPRING_BOOT_UPDATE_PAYMENT_URL,
+                headers={"Authorization": auth_header}, params=params, timeout=10)
+            except requests.exceptions.RequestException:
+                return Response(reponses(success=0, error_msg='Erreur de communication avec le service de paiement'), status=500)
 
         serializer = TransactionSerializer(transaction)
         return Response(reponses(success=1, results={'message': 'Transaction créée avec succès', 'data': serializer.data}))
@@ -129,17 +146,23 @@ class ListUserTransactionsView(APIView):
         outcome_transactions = Transactions.objects.filter(sender=user_id).exclude(type='withdraw')
         all_transactions = income_transactions.union(outcome_transactions).order_by('-created_at')
 
-        data = [
-            {
-                "name": transaction.state == 'failed' and "Transaction échoué" or get_transaction_title(transaction, user_id),
-                "amount": transaction.sender == user_id and (-1) * transaction.amount or transaction.amount_to_collect,
-                "description": transaction.state == 'failed' and "-" or set_description(transaction),
-                "transport": transaction.announce.voyage.moyen_transport,
-                "failed": transaction.state == 'failed'
-            }
-            for transaction in all_transactions
-        ]
-        return Response(reponses(success=1, results={'transactions': data}))
+        # data = [
+        #     {
+        #         "name": transaction.state == 'failed' and "Transaction échoué" or get_transaction_title(transaction, user_id),
+        #         "amount": transaction.sender == user_id and (-1) * transaction.amount or transaction.amount_to_collect,
+        #         "description": transaction.state == 'failed' and "-" or set_description(transaction),
+        #         "transport": transaction.announce.voyage.moyen_transport,
+        #         "failed": transaction.state == 'failed'
+        #     }
+        #     for transaction in all_transactions
+        # ]
+        serializer = TransactionSerializer(all_transactions)
+
+        response_data = {
+            **serializer.data,
+        }
+        #return Response(reponses(success=1, results={'account_transactions': data}))
+        return Response(reponses(success=1, results=response_data))
 
 
 class ListUserPendingTransactionsView(APIView):
@@ -149,17 +172,23 @@ class ListUserPendingTransactionsView(APIView):
         user_id = request.user.id
         transactions = Transactions.objects.filter(beneficiary=user_id, state='pending').order_by('-created_at')
 
-        data = [
-            {
-                "name": get_transaction_title(transaction, user_id),
-                "amount": transaction.amount_to_collect,
-                "description": set_description(transaction),
-                "transport": transaction.announce.voyage.moyen_transport,
-                "failed": transaction.state == 'failed'
-            }
-            for transaction in transactions
-        ]
-        return Response(reponses(success=1, results={'pending_transactions': data}))
+        # data = [
+        #     {
+        #         "name": get_transaction_title(transaction, user_id),
+        #         "amount": transaction.amount_to_collect,
+        #         "description": set_description(transaction),
+        #         "transport": transaction.announce.voyage.moyen_transport,
+        #         "failed": transaction.state == 'failed'
+        #     }
+        #     for transaction in transactions
+        # ]
+        serializer = TransactionSerializer(transactions)
+
+        response_data = {
+            **serializer.data,
+        }
+        #return Response(reponses(success=1, results={'account_transactions': data}))
+        return Response(reponses(success=1, results=response_data))
 
 
 class ListUserAccountTransactionsView(APIView):
@@ -171,17 +200,23 @@ class ListUserAccountTransactionsView(APIView):
         outcome_transactions = Transactions.objects.filter(sender=user_id, type='withdraw')
         all_transactions = income_transactions.union(outcome_transactions).order_by('-created_at')
 
-        data = [
-            {
-                "name": get_transaction_title(transaction, user_id),
-                "amount": transaction.sender == user_id and (-1) * transaction.amount or transaction.amount_to_collect,
-                "description": "-",
-                "transport": "-",
-                "failed": transaction.state == 'failed'
-            }
-            for transaction in all_transactions
-        ]
-        return Response(reponses(success=1, results={'account_transactions': data}))
+        # data = [
+        #     {
+        #         "name": get_transaction_title(transaction, user_id),
+        #         "amount": transaction.sender == user_id and (-1) * transaction.amount or transaction.amount_to_collect,
+        #         "description": "-",
+        #         "transport": "-",
+        #         "failed": transaction.state == 'failed'
+        #     }
+        #     for transaction in all_transactions
+        # ]
+        serializer = TransactionSerializer(all_transactions)
+
+        response_data = {
+            **serializer.data,
+        }
+        #return Response(reponses(success=1, results={'account_transactions': data}))
+        return Response(reponses(success=1, results=response_data))
 
 def get_user_balance_info(user_id):
     pending_transactions = Transactions.objects.filter(beneficiary=user_id, type='transfer', state='pending')
