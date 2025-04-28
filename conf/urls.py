@@ -14,5 +14,6 @@ urlpatterns = [
     path('ws/api/v1/', include('bank_details.api.urls')),
     path('ws/api/v1/account/', include('transactions.api.urls')),
     path('ws/api/v1/payment/', include('payments.api.urls')),
+    path('ws/api/v1/contact/', include('contact.api.urls')),
     
 ]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

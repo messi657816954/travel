@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+{% load static %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: url({% static 'images/backgroundlj.jpg' %}) no-repeat center center/cover;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 20px auto;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: left;
+        }
+        .red-bar {
+                width: 100%;
+                max-width: 600px;
+                height: 6px;
+                background-color: #C00000;
+                top: 0;
+                left: 0;
+            }
+        .div-space {
+            padding-left: 30px
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+    	<img src="{% static 'images/entetelj.jpg' %}" alt="Entête">
+        <div class="div-space">
+                <p>{{message}}</p>
+        </div>
+        <div class="red-bar"></div>
+    </div>
+</body>
+</html>
