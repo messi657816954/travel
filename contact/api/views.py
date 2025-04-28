@@ -30,10 +30,10 @@ class CreateContactUserAPIView(APIView):
             'phone': request.data['phone']
             }
         contact_serializer = ContactUserSerializer(data=contact)
-        if not ContactUserSerializer.is_valid():
+        if not contact_serializer.is_valid():
             return Response(reponses(
                 success=0,
-                error_msg='Data requester is invalid: '+ str(ContactUserSerializer.errors),
+                error_msg='Data requester is invalid: '+ str(contact_serializer.errors),
             ))
         ctx = {
             'message': request.data['message_body']
