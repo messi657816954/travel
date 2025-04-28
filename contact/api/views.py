@@ -22,14 +22,9 @@ class CreateContactUserAPIView(APIView):
         try:
             contact = ContactUser.objects.get(email=request.data['email'])
             contact.last_msg_date = timezone.now()
+            contact_serializer = ContactUserSerializer(instance=contact, data=request.data, partial=True)
         except ContactUser.DoesNotExist:
-            contact = {
-            'email': request.data['email'],
-            'firstname': request.data['firstname'],
-            'lastname': request.data['lastname'],
-            'phone': request.data['phone']
-            }
-        contact_serializer = ContactUserSerializer(data=contact)
+            contact_serializer = ContactUserSerializer(data=request.data)
         if not contact_serializer.is_valid():
             return Response(reponses(
                 success=0,
