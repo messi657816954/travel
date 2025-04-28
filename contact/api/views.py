@@ -37,8 +37,8 @@ class CreateContactUserAPIView(APIView):
         mail = EmailMessage(
             "Contact",
             message,
-            EMAIL_HOST_USER,
-            [request.data['email']]
+            request.data['email'],
+            [EMAIL_HOST_USER]
         )
         mail.content_subtype = "html"
         mail.send(fail_silently=True)
