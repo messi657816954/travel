@@ -18,7 +18,7 @@ class TransactionSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def validate(self, data):
-        transaction_type = data.get('type')
+        transaction_type = data.get('type', None)
         announce = data.get('announce')
         reservation = data.get('reservation')
 

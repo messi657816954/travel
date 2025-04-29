@@ -10,7 +10,7 @@ from users.utils import STRIPE_API_KEY, reponses
 stripe.api_key = STRIPE_API_KEY
 
 
-def saveBAnkDetails(user, payment_method_id) :
+def saveBAnkDetails(user, payment_method_id, customer_id) :
     try:
         stripe_payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
         last4 = stripe_payment_method["card"]["last4"]
@@ -23,7 +23,8 @@ def saveBAnkDetails(user, payment_method_id) :
             last4=last4,
             provider=provider,
             expire_date=f"{exp_month:02}/{exp_year}",
-            payment_method_id=payment_method_id
+            payment_method_id=payment_method_id,
+            customer_id=customer_id
         )
         return {"message": "Méthode enregistrée"}, status.HTTP_201_CREATED
 
@@ -66,7 +67,8 @@ class BankDetailsView(APIView):
     def post(self, request):
         user = request.user
         payment_method_id = request.data.get("payment_method_id")
-        save_response = saveBAnkDetails(user, payment_method_id)
+        customer_id = request.data.get("customer_id")
+        save_response = saveBAnkDetails(user, payment_method_id, customer_id)
 
         return Response(save_response[0], status=save_response[1])
 
