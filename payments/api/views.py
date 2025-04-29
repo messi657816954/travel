@@ -73,9 +73,9 @@ class PaymentWithSavedCardView(APIView):
         payload = {
             "currency": currency_code,
             "amount": amount,
-            "payment_method": payment_method,
-            "payment_method_id": payment_method_id,
-            "customer_id": customer_id
+            "paymentMethod": payment_method,
+            "paymentMethodId": payment_method_id,
+            "customerId": customer_id
         }
 
         try:
