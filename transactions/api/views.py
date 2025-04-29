@@ -158,11 +158,11 @@ class ListUserTransactionsView(APIView):
         # ]
         serializer = TransactionSerializer(all_transactions, many=True)
 
-        response_data = {
-            **serializer.data,
-        }
+        # response_data = {
+        #     **serializer.data,
+        # }
         #return Response(reponses(success=1, results={'account_transactions': data}))
-        return Response(reponses(success=1, results=response_data))
+        return Response(reponses(success=1, results=serializer.data))
 
 
 class ListUserPendingTransactionsView(APIView):
@@ -184,11 +184,11 @@ class ListUserPendingTransactionsView(APIView):
         # ]
         serializer = TransactionSerializer(transactions, many=True)
 
-        response_data = {
-            **serializer.data,
-        }
+        # response_data = {
+        #     **serializer.data,
+        # }
         #return Response(reponses(success=1, results={'account_transactions': data}))
-        return Response(reponses(success=1, results=response_data))
+        return Response(reponses(success=1, results=serializer.data))
 
 
 class ListUserAccountTransactionsView(APIView):
@@ -212,11 +212,11 @@ class ListUserAccountTransactionsView(APIView):
         # ]
         serializer = TransactionSerializer(all_transactions, many=True)
 
-        response_data = {
-            **serializer.data,
-        }
+        # response_data = {
+        #     **serializer.data,
+        # }
         #return Response(reponses(success=1, results={'account_transactions': data}))
-        return Response(reponses(success=1, results=response_data))
+        return Response(reponses(success=1, results=serializer.data))
 
 def get_user_balance_info(user_id):
     pending_transactions = Transactions.objects.filter(beneficiary=user_id, type='transfer', state='pending')
