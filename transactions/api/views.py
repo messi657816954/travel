@@ -156,7 +156,7 @@ class ListUserTransactionsView(APIView):
         #     }
         #     for transaction in all_transactions
         # ]
-        serializer = TransactionSerializer(all_transactions)
+        serializer = TransactionSerializer(all_transactions, many=True)
 
         response_data = {
             **serializer.data,
@@ -182,7 +182,7 @@ class ListUserPendingTransactionsView(APIView):
         #     }
         #     for transaction in transactions
         # ]
-        serializer = TransactionSerializer(transactions)
+        serializer = TransactionSerializer(transactions, many=True)
 
         response_data = {
             **serializer.data,
@@ -210,7 +210,7 @@ class ListUserAccountTransactionsView(APIView):
         #     }
         #     for transaction in all_transactions
         # ]
-        serializer = TransactionSerializer(all_transactions)
+        serializer = TransactionSerializer(all_transactions, many=True)
 
         response_data = {
             **serializer.data,
