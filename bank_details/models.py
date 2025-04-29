@@ -22,6 +22,15 @@ class BankDetails(models.Model):
     expire_date = models.CharField(max_length=5, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     _payment_method_id = models.TextField(unique=True, null=True, blank=True)
+    _customer_id = models.TextField(unique=True, null=True, blank=True)
+
+    @property
+    def customer_id(self):
+        return decrypt_data(self._customer_id)
+
+    @customer_id.setter
+    def customer_id(self, value):
+        self._customer_id = encrypt_data(value)
 
     @property
     def payment_method_id(self):
