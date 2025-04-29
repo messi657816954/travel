@@ -42,7 +42,7 @@ class ListPaymentMethodsBaseView(APIView):
         list_bank_details = []
         if use_type == "in":
             user_bank_details = BankDetails.objects.filter(user_id=request.user.id)
-            list_bank_details = [{"provider": userBank.provider, "card_number": f"****{userBank.last4}", "expire_date": userBank.expire_date} for userBank in user_bank_details]
+            list_bank_details = [{"payment_method_id": userBank.id, "provider": userBank.provider, "card_number": f"****{userBank.last4}", "expire_date": userBank.expire_date} for userBank in user_bank_details]
         use_values = ["both", use_type] if use_type in ["in", "out"] else ["both"]
 
         payment_methods = self.get_payment_methods(use_values)
@@ -80,6 +80,7 @@ class ListBankDetailsView(APIView):
         methods = BankDetails.objects.filter(user_id=user)
         data = [
             {
+                "payment_method_id": method.id,
                 "provider": method.provider,
                 "card_number": f"****{method.last4}",
                 "expire_date": method.expire_date,

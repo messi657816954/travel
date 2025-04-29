@@ -8,12 +8,13 @@ import stripe, requests, datetime, uuid
 from django.conf import settings
 from rest_framework import status
 from decimal import Decimal
+from django.core.paginator import Paginator
 
 from preferences.models import UserPreference
 from transactions.models import Transactions
 from commons.models import Currency
 from annonces.models import Reservation
-from transactions.api.serializers import TransactionSerializer
+from transactions.api.serializers import TransactionSerializer, TransactionDetailsSerializer
 from users.utils import reponses, SPRING_BOOT_UPDATE_PAYMENT_URL
 
 def get_transaction_title(transaction, user_id):
@@ -156,6 +157,15 @@ class ListUserTransactionsView(APIView):
         #     }
         #     for transaction in all_transactions
         # ]
+
+        if 'page' in request.query_params:
+            paginator = Paginator(all_transactions, 5)
+            page = request.query_params['page']
+            all_transactions = paginator.get_page(page)
+            serializer = TransactionSerializer(all_transactions, many=True)
+            counts = paginator.num_pages
+            res = reponses(success=1, results=serializer.data,num_page=counts)
+            return Response(res)
         serializer = TransactionSerializer(all_transactions, many=True)
 
         # response_data = {
@@ -182,6 +192,15 @@ class ListUserPendingTransactionsView(APIView):
         #     }
         #     for transaction in transactions
         # ]
+
+        if 'page' in request.query_params:
+            paginator = Paginator(transactions, 5)
+            page = request.query_params['page']
+            transactions = paginator.get_page(page)
+            serializer = TransactionSerializer(transactions, many=True)
+            counts = paginator.num_pages
+            res = reponses(success=1, results=serializer.data,num_page=counts)
+            return Response(res)
         serializer = TransactionSerializer(transactions, many=True)
 
         # response_data = {
@@ -210,6 +229,14 @@ class ListUserAccountTransactionsView(APIView):
         #     }
         #     for transaction in all_transactions
         # ]
+        if 'page' in request.query_params:
+            paginator = Paginator(all_transactions, 5)
+            page = request.query_params['page']
+            all_transactions = paginator.get_page(page)
+            serializer = TransactionSerializer(all_transactions, many=True)
+            counts = paginator.num_pages
+            res = reponses(success=1, results=serializer.data,num_page=counts)
+            return Response(res)
         serializer = TransactionSerializer(all_transactions, many=True)
 
         # response_data = {
@@ -256,7 +283,7 @@ class TransactionDetailAPIView(APIView):
         if not transaction:
             res = reponses(success=0, error_msg="Transaction not found.")
             return Response(res)
-        serializer = TransactionSerializer(transaction)
+        serializer = TransactionDetailsSerializer(transaction)
 
         response_data = {
             **serializer.data,

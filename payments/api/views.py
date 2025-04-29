@@ -61,12 +61,16 @@ class PaymentWithSavedCardView(APIView):
         reservation_id = request.data.get("reservation")
         payment_method = request.data.get("payment_method")
         payment_method_id = request.data.get("payment_method_id")
-        customer_id = request.data.get("customer_id")
         user_pref = UserPreference.objects.filter(user_id=request.user.id).first()
         currency_code = user_pref and user_pref.currency.code or 'EUR'
 
         try:
-            reservation = Reservation.objects.get(pk=reservation_id)
+            bank_detail = BankDetails.objects.get(pk=payment_method_id, user_id=request.user.id)
+        except BankDetails.DoesNotExist:
+            return Response(reponses(success=0, error_msg='Payment method not found'), status=404)
+
+        try:
+            reservation = Reservation.objects.get(pk=reservation_id, user=request.user.id)
         except Reservation.DoesNotExist:
             return Response(reponses(success=0, error_msg='Reservation not found'), status=404)
 
@@ -74,8 +78,8 @@ class PaymentWithSavedCardView(APIView):
             "currency": currency_code,
             "amount": amount,
             "paymentMethod": payment_method,
-            "paymentMethodId": payment_method_id,
-            "customerId": customer_id
+            "paymentMethodId": bank_detail.payment_method_id,
+            "customerId": bank_detail.customer_id
         }
 
         try:
