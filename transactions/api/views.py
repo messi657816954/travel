@@ -92,13 +92,13 @@ class TransactionCreateView(APIView):
             beneficiary = request.user
         state = transaction_type == 'transfer' and 'paid' or 'pending'
         transaction = create_transactions(amount,
-                                          currency,
-                                          transaction_type,
-                                          state,
-                                          request.data["external_id"],
-                                          sender,
-                                          beneficiary,
-                                          reservation)
+                  currency,
+                  transaction_type,
+                  state,
+                  request.data["external_id"],
+                  sender,
+                  beneficiary,
+                  reservation)
         transaction.description = set_description(transaction)
         transaction.save()
         reservation.date_paiement = datetime.datetime.now()

@@ -129,7 +129,7 @@ class SetupIntendPaymentView(APIView):
             response_data = response.json()
 
             if response_data.get("status") == 200:
-                return Response(reponses(success=1, results={"client_secret":response_data.get("data")}))
+                return Response(reponses(success=1, results={response_data.get("data")}))
             else:
                 return Response(reponses(success=0, error_msg='Échec du paiement'), status=400)
 
