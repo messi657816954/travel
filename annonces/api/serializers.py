@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from annonces.models import Voyage, Annonce, AvisUser
 from commons.models import TypeBagage
-from users.api.serializers import UserDetailSerializer
+from users.api.serializers import UserDetailSerializer, UserSimpleSerializer
 from commons.api.serializers import VilleSerializer
 from users.models import User
 
@@ -100,28 +100,7 @@ class AvisUserSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-
-
-
-
-
 from django.db.models import Avg, Count
-
-class UserSimpleSerializer(serializers.ModelSerializer):
-    # img = serializers.SerializerMethodField()
-    # name = serializers.SerializerMethodField()
-
-    class Meta:
-        model = User
-        fields = ['id', 'user_name']
-
-    # def get_img(self, obj):
-    #     # Remplacer par la logique réelle pour récupérer l'image de profil
-    #     # Si vous avez un modèle de profil utilisateur avec un champ image, utilisez-le ici
-    #     return "-----"
-    #
-    # def get_name(self, obj):
-    #     return obj.get_full_name() or obj.username
 
 class AvisRecusSerializer(serializers.ModelSerializer):
     user_author = serializers.SerializerMethodField()

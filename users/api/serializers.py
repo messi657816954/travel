@@ -136,6 +136,10 @@ class UserDetailSerializer(serializers.ModelSerializer):
         return obj.stats_notes_recues()['nombre_avis']
 
 
+class UserSimpleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'user_name', 'firstname', 'lastname', 'profile_picture']
 
 
 class MoyenPaiementSerializer(serializers.ModelSerializer):

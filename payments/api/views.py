@@ -15,15 +15,17 @@ class InitiatePaymentView(APIView):
 
     def post(self, request):
         amount = request.data.get("amount")
-        reservation_id = request.data.get("reservation")
         payment_method = request.data.get("payment_method")
+        payment_type = request.query_params.get('payment_type', None)
         user_pref = UserPreference.objects.filter(user_id=request.user.id).first()
         currency_code = user_pref and user_pref.currency.code or 'EUR'
 
-        try:
-            reservation = Reservation.objects.get(pk=reservation_id)
-        except Reservation.DoesNotExist:
-            return Response(reponses(success=0, error_msg='Reservation not found'), status=404)
+        if payment_type is None:
+            reservation_id = request.data.get("reservation")
+            try:
+                reservation = Reservation.objects.get(pk=reservation_id, user=request.user)
+            except Reservation.DoesNotExist:
+                return Response(reponses(success=0, error_msg='Reservation not found'), status=404)
 
         payload = {
             "currency": currency_code,
@@ -123,6 +125,8 @@ class SetupIntendPaymentView(APIView):
             auth_header = request.META.get("HTTP_AUTHORIZATION", "")
             if not auth_header.startswith("Bearer "):
                 return Response({"detail": "Token manquant"}, status=401)
+
+            print(payload)
 
             response = requests.post(SPRING_BOOT_SETUP_PAYMENT_URL,
             headers={"Authorization": auth_header}, json=payload, timeout=10)
