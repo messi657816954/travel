@@ -119,13 +119,16 @@ class CompteSerializer(serializers.ModelSerializer):
 class UserDetailSerializer(serializers.ModelSerializer):
     profile_picture = serializers.ImageField(use_url=True)
     pays_details = PaysSerializer(source='pays', read_only=True)
-
     moyenne_notes = serializers.SerializerMethodField()
     avis_count = serializers.SerializerMethodField()
+    total_delivered = serializers.SerializerMethodField()
+    total_send = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'firstname', 'lastname', 'user_name', 'phone', 'address', 'city', 'zip_code', 'profile_picture', 'is_phone_verify', 'is_identity_check', 'pays_details', 'moyenne_notes', 'avis_count']
+        fields = ['id', 'email', 'firstname', 'lastname', 'user_name', 'phone', 'address', 'city',
+                  'zip_code', 'profile_picture', 'is_phone_verify', 'is_identity_check', 'pays_details',
+                  'moyenne_notes', 'avis_count', 'total_send', 'total_delivered']
 
     def get_moyenne_notes(self, obj):
         """Récupère la moyenne des avis reçus."""
@@ -134,6 +137,12 @@ class UserDetailSerializer(serializers.ModelSerializer):
     def get_avis_count(self, obj):
         """Récupère le nombre d'avis reçus."""
         return obj.stats_notes_recues()['nombre_avis']
+
+    def get_total_delivered(self, obj):
+        return obj.stats_reservations()['total_delivered']
+
+    def get_total_send(self, obj):
+        return obj.stats_reservations()['total_send']
 
 
 class UserSimpleSerializer(serializers.ModelSerializer):

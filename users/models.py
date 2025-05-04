@@ -5,10 +5,8 @@ from django.db.models import Sum, Case, When, DecimalField, F, Q, Avg, Count
 
 from commons.models import Pays
 
-
 class UserManager(BaseUserManager):
 
-    
     def create_user(self, email, user_name, password,phone, **other_fields):
 
         if not email:
@@ -85,6 +83,24 @@ class User(AbstractBaseUser,PermissionsMixin):
         return {
             "moyenne": stats.get('moyenne', 0) or 0,
             "nombre_avis": stats.get('nombre_avis', 0)
+        }
+
+    def stats_reservations(self):
+        from annonces.models import Reservation
+
+        reservations_delivered = Reservation.objects.filter(
+            annonce__in=self.annonces.all(),
+            statut="DELIVERED"
+        ).count()
+
+        reservations_send = Reservation.objects.filter(
+            user=self,
+            statut="DELIVERED"
+        ).count()
+
+        return {
+            "total_delivered": reservations_delivered,
+            "total_send": reservations_send
         }
 
 

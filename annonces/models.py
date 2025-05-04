@@ -75,7 +75,7 @@ RESERVATION_STATUS = [
         ('VALIDATE', 'VALIDATE'),
         ('CONFIRM', 'CONFIRM'),
         ('RECEPTION', 'RECEPTION'),
-        ('DELIVRATE', 'DELIVRATE'),
+        ('DELIVERED', 'DELIVERED'),
         ('CANCEL', 'CANCEL'),
     ]
 
