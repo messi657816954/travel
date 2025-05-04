@@ -206,7 +206,7 @@ class ConfirmerLivraisonAPIView(APIView):
                 return Response(reponses(success=0, error_msg='Code de confirmation invalide'))
 
             # Finaliser la livraison
-            reservation.statut = 'DELIVRATE'
+            reservation.statut = 'DELIVERED'
             reservation.save()
             annonce = Annonce.objects.get(id=reservation.annonce.pk)
             annonce.active = False

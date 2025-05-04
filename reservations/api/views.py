@@ -33,7 +33,7 @@ class ReserverKilogrammesAPIView(APIView):
             # Calculer la somme des kg réservés (non annulés ni pending)
             reserved_kg = Reservation.objects.filter(
                 annonce=annonce,
-                statut__in=['VALIDATE', 'CONFIRM', 'RECEPTION', 'DELIVRATE']
+                statut__in=['VALIDATE', 'CONFIRM', 'RECEPTION', 'DELIVERED']
             ).aggregate(total_kg=Sum('nombre_kg'))['total_kg'] or 0
 
             requested_kg = int(request.data['nombre_kg'])
@@ -93,7 +93,7 @@ class UpdateReserverKilogrammesAPIView(APIView):
             # Calculer la somme des kg réservés (exclure la réservation actuelle)
             reserved_kg = Reservation.objects.filter(
                 annonce=annonce,
-                statut__in=['VALIDATE', 'CONFIRM', 'RECEPTION', 'DELIVRATE']
+                statut__in=['VALIDATE', 'CONFIRM', 'RECEPTION', 'DELIVERED']
             ).exclude(id=reservation.id).aggregate(total_kg=Sum('nombre_kg'))['total_kg'] or 0
 
             requested_kg = int(request.data['nombre_kg'])
@@ -145,7 +145,7 @@ class PublishReservationAPIView(APIView):
             annonce = Annonce.objects.get(id=reservation.annonce.pk)
             reserved_kg = Reservation.objects.filter(
                 annonce=annonce,
-                statut__in=['VALIDATE', 'CONFIRM', 'RECEPTION', 'DELIVRATE']
+                statut__in=['VALIDATE', 'CONFIRM', 'RECEPTION', 'DELIVERED']
             ).exclude(id=reservation.id).aggregate(total_kg=Sum('nombre_kg'))['total_kg'] or 0
 
             if reserved_kg + reservation.nombre_kg > annonce.nombre_kg_dispo:
@@ -373,7 +373,7 @@ class LivraisonColisReservationAPIView(APIView):
             if reservation.code_livraison != request.data['code_livraison']:
                 return Response(reponses(success=0, error_msg='Code de livraison invalide'))
 
-            reservation.statut = 'DELIVRATE'
+            reservation.statut = 'DELIVERED'
             reservation.save()
             annonce = reservation.annonce
             annonce.active = False
