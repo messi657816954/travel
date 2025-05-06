@@ -102,10 +102,11 @@ class PaymentWithSavedCardView(APIView):
                                      json=payload, timeout=10)
             response_data = response.json()
 
+
             if response_data.get("status") == 200:
                 return Response(reponses(success=1, results=response_data))
             else:
-                return Response(reponses(success=0, error_msg='Échec du paiement'), status=400)
+                return Response(reponses(success=0, error_msg='Échec du paiement: ' + response_data.get('error')), status=500)
 
         except requests.exceptions.Timeout:
             return Response(reponses(success=0, error_msg='Le service de paiement est trop lent, veuillez réessayer.'), status=504)
