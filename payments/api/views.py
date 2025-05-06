@@ -6,13 +6,26 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from bank_details.models import BankDetails
 from annonces.models import Reservation
-from users.utils import (reponses,
+from users.utils import (reponses, STRIPE_API_KEY,
                          SPRING_BOOT_PAYMENT_URL,
                          SPRING_BOOT_SETUP_PAYMENT_URL,
                          SPRING_BOOT_PAYMENT_WITH_SAVED_CARD_URL,
                          SPRING_BOOT_WITHDRAW_URL)
 from preferences.models import UserPreference
+import stripe
 
+stripe.api_key = STRIPE_API_KEY
+
+
+def list_legacy_cards(customer_id, last4):
+    customer = stripe.Customer.retrieve(customer_id)
+    sources = customer.sources.list(object="card")
+
+    filtered = list(filter(lambda card: card['last4'] == last4, sources['data']))
+    if len(filtered) > 0:
+        return filtered[0]['id']
+    else:
+        raise Exception
 
 class InitiatePaymentView(APIView):
     permission_classes = [IsAuthenticated]
@@ -84,11 +97,18 @@ class PaymentWithSavedCardView(APIView):
         elif payment_type not in ('deposit', 'withdraw'):
             return Response(reponses(success=0, error_msg='Invalid params'), status=400)
 
+        card_id = bank_detail.payment_method_id
+        if payment_type == 'withdraw':
+            try:
+                card_id = list_legacy_cards(bank_detail.customer_id, bank_detail.last4)
+            except Exception:
+                return Response(reponses(success=0, error_msg='Invalid card'), status=400)
+
         payload = {
             "currency": currency_code,
             "amount": amount,
             "paymentMethod": payment_method,
-            "paymentMethodId": bank_detail.payment_method_id,
+            "paymentMethodId": card_id,
             "customerId": bank_detail.customer_id
         }
 
