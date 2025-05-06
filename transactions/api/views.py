@@ -91,7 +91,7 @@ class TransactionCreateView(APIView):
         if transaction_type == 'deposit':
             beneficiary = request.user
         state = transaction_type == 'transfer' and 'paid' or 'pending'
-        transactions = Transactions.Objects.filter(external_id=request.data["external_id"]).exclude(state__in=('failed', 'canceled')).count()
+        transactions = Transactions.objects.filter(external_id=request.data["external_id"]).exclude(state__in=('failed', 'canceled')).count()
         if transactions > 0:
             return Response(reponses(success=0, error_msg='Duplicate transaction not allowed'), status=409)
         transaction = create_transactions(amount,
