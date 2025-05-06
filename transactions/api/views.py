@@ -91,6 +91,9 @@ class TransactionCreateView(APIView):
         if transaction_type == 'deposit':
             beneficiary = request.user
         state = transaction_type == 'transfer' and 'paid' or 'pending'
+        transactions = Transactions.Objects.filter(external_id=request.data["external_id"]).exclude(state__in=('failed', 'canceled')).count()
+        if transactions > 0:
+            return Response(reponses(success=0, error_msg='Duplicate transaction not allowed'), status=409)
         transaction = create_transactions(amount,
                   currency,
                   transaction_type,
@@ -99,10 +102,11 @@ class TransactionCreateView(APIView):
                   sender,
                   beneficiary,
                   reservation)
-        transaction.description = set_description(transaction)
+        if reservation is not None:
+            transaction.description = set_description(transaction)
+            reservation.date_paiement = datetime.datetime.now()
+            reservation.save()
         transaction.save()
-        reservation.date_paiement = datetime.datetime.now()
-        reservation.save()
         if transaction_type is not None:
             try:
                 auth_header = request.META.get("HTTP_AUTHORIZATION", "")
