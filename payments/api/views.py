@@ -6,7 +6,11 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from bank_details.models import BankDetails
 from annonces.models import Reservation
-from users.utils import reponses, SPRING_BOOT_PAYMENT_URL, SPRING_BOOT_SETUP_PAYMENT_URL, SPRING_BOOT_PAYMENT_WITH_SAVED_CARD_URL
+from users.utils import (reponses,
+                         SPRING_BOOT_PAYMENT_URL,
+                         SPRING_BOOT_SETUP_PAYMENT_URL,
+                         SPRING_BOOT_PAYMENT_WITH_SAVED_CARD_URL,
+                         SPRING_BOOT_WITHDRAW_URL)
 from preferences.models import UserPreference
 
 
@@ -60,9 +64,9 @@ class PaymentWithSavedCardView(APIView):
 
     def post(self, request):
         amount = request.data.get("amount")
-        reservation_id = request.data.get("reservation")
         payment_method = request.data.get("payment_method")
         payment_method_id = request.data.get("payment_method_id")
+        payment_type = request.query_params.get('payment_type', None)
         user_pref = UserPreference.objects.filter(user_id=request.user.id).first()
         currency_code = user_pref and user_pref.currency.code or 'EUR'
 
@@ -71,10 +75,14 @@ class PaymentWithSavedCardView(APIView):
         except BankDetails.DoesNotExist:
             return Response(reponses(success=0, error_msg='Payment method not found'), status=404)
 
-        try:
-            reservation = Reservation.objects.get(pk=reservation_id, user=request.user.id)
-        except Reservation.DoesNotExist:
-            return Response(reponses(success=0, error_msg='Reservation not found'), status=404)
+        if payment_type is None:
+            reservation_id = request.data.get("reservation")
+            try:
+                reservation = Reservation.objects.get(pk=reservation_id, user=request.user)
+            except Reservation.DoesNotExist:
+                return Response(reponses(success=0, error_msg='Reservation not found'), status=404)
+        elif payment_type not in ('deposit', 'withdraw'):
+            return Response(reponses(success=0, error_msg='Invalid params'), status=400)
 
         payload = {
             "currency": currency_code,
@@ -89,8 +97,9 @@ class PaymentWithSavedCardView(APIView):
             if not auth_header.startswith("Bearer "):
                 return Response({"detail": "Token manquant"}, status=401)
 
-            response = requests.post(SPRING_BOOT_PAYMENT_WITH_SAVED_CARD_URL,
-            headers={"Authorization": auth_header}, json=payload, timeout=10)
+            url = (payment_type is None or payment_type == "deposit") and SPRING_BOOT_PAYMENT_WITH_SAVED_CARD_URL or SPRING_BOOT_WITHDRAW_URL
+            response = requests.post(url, headers={"Authorization": auth_header},
+                                     json=payload, timeout=10)
             response_data = response.json()
 
             if response_data.get("status") == 200:

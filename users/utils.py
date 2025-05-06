@@ -28,6 +28,7 @@ SPRING_BOOT_REFUND_PAYMENT_URL = env('SPRING_BOOT_REFUND_PAYMENT_URL', default='
 SPRING_BOOT_CAPTURE_PAYMENT_URL = env('SPRING_BOOT_CAPTURE_PAYMENT_URL', default='http://localhost:8084/api/payment/capture')
 SPRING_BOOT_CANCEL_PAYMENT_URL = env('SPRING_BOOT_CANCEL_PAYMENT_URL', default='http://localhost:8084/api/payment/cancel')
 SPRING_BOOT_SETUP_PAYMENT_URL = env('SPRING_BOOT_SETUP_PAYMENT_URL', default='http://localhost:8084/api/payment/setup-intent')
+SPRING_BOOT_WITHDRAW_URL = env('SPRING_BOOT_WITHDRAW_URL', default='http://localhost:8084/api/payment/create-payout')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='TestSecret')
 SECRET_KEY = env('SECRET_KEY', default='django-insecure-thpb^(rj66qm$*^5zh75)5x&41=i$_!g_&)2v883g_b-oy@0dv')
 
