@@ -106,9 +106,12 @@ class PaymentWithSavedCardView(APIView):
             return Response(reponses(success=0, error_msg='Invalid params'), status=400)
 
         card_id = bank_detail.payment_method_id
+        customerId = bank_detail.customer_id
         if payment_type == 'withdraw':
             try:
-                card_id = list_legacy_cards(bank_detail.customer_id, bank_detail.last4)
+                card_id = bank_detail.account_id
+                payment_method = "bank_account"
+                customerId = ""
             except Exception:
                 return Response(reponses(success=0, error_msg='Invalid card'), status=400)
 
@@ -117,7 +120,7 @@ class PaymentWithSavedCardView(APIView):
             "amount": amount,
             "paymentMethod": payment_method,
             "paymentMethodId": card_id,
-            "customerId": bank_detail.customer_id
+            "customerId": customerId
         }
 
         try:

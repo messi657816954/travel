@@ -102,7 +102,7 @@ class BankAccountDetailsView(APIView):
     @transaction.atomic
     def post(self, request):
         user = request.user
-        user_bank = BankDetails.objects.filter(user_id=request.user.id).exclude(_account_id=None)
+        user_bank = BankDetails.objects.filter(user_id=request.user.id, bank_type="bank_account")
         payload = {}
         if len(user_bank) > 0:
             payload["connect_id"] = user_bank[0].account_id
