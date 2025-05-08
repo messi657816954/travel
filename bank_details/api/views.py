@@ -125,8 +125,8 @@ class BankAccountDetailsView(APIView):
             return Response(reponses(success=0, error_msg='Erreur de communication avec le service'), status=500)
 
         if response_data.get("status") == 200:
-            account_id = response_data.get("data")("account_id")
-            external_id = response_data.get("data")("external_account").get("id")
+            account_id = response_data.get("data").get("account_id")
+            external_id = response_data.get("data").get("external_account")
             save_response = saveBAnkDetails(user, external_id, account_id)
             return Response(reponses(success=1, results=response_data))
         else:
