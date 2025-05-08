@@ -105,15 +105,20 @@ class PaymentWithSavedCardView(APIView):
         elif payment_type not in ('deposit', 'withdraw'):
             return Response(reponses(success=0, error_msg='Invalid params'), status=400)
 
-        card_id = bank_detail.payment_method_id
-        customerId = bank_detail.customer_id
+        if payment_type == 'deposit':
+            try:
+                card_id = bank_detail.payment_method_id
+                customerId = bank_detail.customer_id
+            except Exception:
+                return Response(reponses(success=0, error_msg='Invalid card'), status=400)
+
         if payment_type == 'withdraw':
             try:
                 card_id = bank_detail.account_id
                 payment_method = "bank_account"
                 customerId = ""
             except Exception:
-                return Response(reponses(success=0, error_msg='Invalid card'), status=400)
+                return Response(reponses(success=0, error_msg='Invalid Account'), status=400)
 
         payload = {
             "currency": currency_code,
