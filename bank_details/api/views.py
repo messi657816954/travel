@@ -2,10 +2,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import *
 from django.db import transaction
-import stripe
+import stripe, requests
 from rest_framework import status
 from bank_details.models import BankDetails, PaymentMethods
-from users.utils import STRIPE_API_KEY, reponses
+from users.utils import STRIPE_API_KEY, reponses, SPRING_BOOT_BANK_ACCOUNT_URL
 
 stripe.api_key = STRIPE_API_KEY
 
@@ -21,12 +21,35 @@ def saveBAnkDetails(user, payment_method_id, customer_id) :
         method = BankDetails.objects.create(
             user_id=user,
             last4=last4,
+            bank_type="card",
             provider=provider,
             expire_date=f"{exp_month:02}/{exp_year}",
             payment_method_id=payment_method_id,
             customer_id=customer_id
         )
         return {"message": "Méthode enregistrée"}, status.HTTP_201_CREATED
+
+    except Exception as e:
+        return {"error": str(e)}, status.HTTP_400_BAD_REQUEST
+
+def saveBAnkAccountDetails(user, external_account_id, account_id) :
+    try:
+        stripe_bank_account = stripe.Account.retrieve_external_account(
+            account_id,
+            external_account_id
+        )
+        last4 = stripe_bank_account["last4"]
+        provider = stripe_bank_account["bank_name"]
+
+        method = BankDetails.objects.create(
+            user_id=user,
+            last4=last4,
+            provider=provider,
+            bank_type="bank_account",
+            external_account_id=external_account_id,
+            account_id=account_id
+        )
+        return {"message": "Bank account added"}, status.HTTP_201_CREATED
 
     except Exception as e:
         return {"error": str(e)}, status.HTTP_400_BAD_REQUEST
@@ -71,6 +94,43 @@ class BankDetailsView(APIView):
         save_response = saveBAnkDetails(user, payment_method_id, customer_id)
 
         return Response(save_response[0], status=save_response[1])
+
+
+class BankAccountDetailsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request):
+        user = request.user
+        user_bank = BankDetails.objects.filter(user_id=request.user.id).exclude(_account_id=None)
+        payload = {}
+        if len(user_bank) > 0:
+            payload["connect_id"] = user_bank[0].account_id
+        payload["country"] = request.data.get("country")
+        payload["email"] = user.email
+        payload["type"] = "express"
+        payload["token_id"] = request.data.get("token_id")
+        try:
+            auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+            if not auth_header.startswith("Bearer "):
+                return Response({"detail": "Token manquant"}, status=401)
+
+            response = requests.post(SPRING_BOOT_BANK_ACCOUNT_URL,
+            headers={"Authorization": auth_header}, json=payload, timeout=10)
+            response_data = response.json()
+
+        except requests.exceptions.Timeout:
+            return Response(reponses(success=0, error_msg='Service too slow try again.'), status=504)
+        except requests.exceptions.RequestException:
+            return Response(reponses(success=0, error_msg='Erreur de communication avec le service'), status=500)
+
+        if response_data.get("status") == 200:
+            account_id = response_data.get("data")("account_id")
+            external_id = response_data.get("data")("external_account").get("id")
+            save_response = saveBAnkDetails(user, external_id, account_id)
+            return Response(reponses(success=1, results=response_data))
+        else:
+            return Response(reponses(success=0, results=response_data), status=400)
 
 class ListBankDetailsView(APIView):
     permission_classes = [IsAuthenticated]
