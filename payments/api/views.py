@@ -18,10 +18,15 @@ stripe.api_key = STRIPE_API_KEY
 
 
 def list_legacy_cards(customer_id, last4):
+    payment_methods = stripe.PaymentMethod.list(
+        customer=customer_id,
+        type="card",
+        limit=3
+    )
+    print(payment_methods)
+    print("############")
     customer = stripe.Customer.retrieve(customer_id)
     sources = customer.sources.list(object="card")
-    print(sources)
-    print("############")
     print(last4)
 
     filtered = list(filter(lambda card: card['last4'] == last4, sources['data']))

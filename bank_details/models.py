@@ -6,6 +6,9 @@ USE_CHOICES = [("in", "Paiement"),
    ("out", "Retrait"),
     ("both", "Paiement et Retrait")]
 
+BANK_CHOICES = [("card", "Card"),
+   ("bank_account", "Bank Account")]
+
 class PaymentMethods(models.Model):
     code = models.CharField(max_length=20, unique=True)
     name = models.CharField(max_length=100)
@@ -18,11 +21,14 @@ class PaymentMethods(models.Model):
 class BankDetails(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     last4 = models.CharField(max_length=4)
+    bank_type = models.CharField(max_length=20, choices=BANK_CHOICES, default="card")
     provider = models.CharField(max_length=50, null=True, blank=True)
     expire_date = models.CharField(max_length=5, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     _payment_method_id = models.TextField(unique=True, null=True, blank=True)
     _customer_id = models.TextField(unique=True, null=True, blank=True)
+    _account_id = models.TextField(unique=True, null=True, blank=True)
+    _external_account_id = models.TextField(unique=True, null=True, blank=True)
 
     @property
     def customer_id(self):
@@ -39,6 +45,22 @@ class BankDetails(models.Model):
     @payment_method_id.setter
     def payment_method_id(self, value):
         self._payment_method_id = encrypt_data(value)
+
+    @property
+    def account_id(self):
+        return decrypt_data(self._account_id)
+
+    @account_id.setter
+    def account_id(self, value):
+        self._account_id = encrypt_data(value)
+
+    @property
+    def external_account_id(self):
+        return decrypt_data(self._external_account_id)
+
+    @external_account_id.setter
+    def external_account_id(self, value):
+        self._external_account_id = encrypt_data(value)
 
     def __str__(self):
         return f"{self.provider} ****{self.last4}"
