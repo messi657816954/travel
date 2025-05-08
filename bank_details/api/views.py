@@ -102,7 +102,7 @@ class BankAccountDetailsView(APIView):
     @transaction.atomic
     def post(self, request):
         user = request.user
-        user_bank = BankDetails.objects.filter(user_id=request.user.id).exclude(_account_id=None)
+        user_bank = BankDetails.objects.filter(user_id=request.user.id, bank_type="bank_account")
         payload = {}
         if len(user_bank) > 0:
             payload["connect_id"] = user_bank[0].account_id
@@ -127,7 +127,7 @@ class BankAccountDetailsView(APIView):
         if response_data.get("status") == 200:
             account_id = response_data.get("data").get("account_id")
             external_id = response_data.get("data").get("external_account")
-            save_response = saveBAnkDetails(user, external_id, account_id)
+            save_response = saveBAnkAccountDetails(user, external_id, account_id)
             return Response(reponses(success=1, results=response_data))
         else:
             return Response(reponses(success=0, results=response_data), status=400)
